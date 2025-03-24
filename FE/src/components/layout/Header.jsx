@@ -123,11 +123,13 @@ const Header = () => {
                     In real app, these would navigate to login/signup pages */}
                 <Link to="/login" className="text-gray-500 hover:text-gray-700">
                   <Button onClick={toggleLogin}>Login</Button>
+                
+                </Link>
+                <Link to="/signup">
                   <Button
                     variant="outline"
-                    className="ml-3"
-                    onClick={toggleLogin}
-
+                    fullWidth
+                    className="text-blue-600 border-blue-600 hover:bg-blue-50 transition-all duration-300 ease-in-out rounded-md"
                   >
                     Sign Up
                   </Button>
