@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 
 // Pages
 import Home from "../pages/Home";
+import SignUp from "../pages/SignUp";
 
 // Placeholder components for pages that need backend
 const PlaceholderPage = ({ title, description }) => (
@@ -51,6 +52,7 @@ const AppRoutes = () => {
     <Routes>
       {/* Public routes */}
       <Route path="/" element={<Home />} />
+      <Route path="/signup" element={<SignUp />} /> {/* Thêm route cho SignUp */}
 
       {/* Routes that need backend (using placeholders) */}
       <Route
@@ -98,6 +100,7 @@ const AppRoutes = () => {
           />
         }
       />
+     
 
       {/* Fallback for unknown routes */}
       <Route path="*" element={<Navigate to="/" replace />} />

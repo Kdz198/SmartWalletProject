@@ -3,18 +3,15 @@ import { Link, useNavigate } from "react-router-dom";
 import Button from "../common/Button";
 
 const Header = () => {
-  // Mock authentication state - replace with real auth context when BE is ready
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Mock user data
   const user = {
     name: "John Doe",
     avatarUrl: "/api/placeholder/40/40",
   };
 
-  // Mock notification count
   const notificationCount = 3;
 
   const toggleLogin = () => {
@@ -23,7 +20,6 @@ const Header = () => {
 
   const logout = () => {
     setIsLoggedIn(false);
-    // In real app, call logout API and clear tokens
   };
 
   const toggleMobileMenu = () => {
@@ -31,61 +27,62 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-white shadow">
+    <header className="bg-white shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex">
-            <div className="flex-shrink-0 flex items-center">
-              <Link to="/" className="text-xl font-bold text-blue-600">
-                FinancePro
-              </Link>
-            </div>
-            <nav className="hidden sm:ml-6 sm:flex sm:space-x-8">
-              <Link
-                to="/"
-                className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-              >
-                Home
-              </Link>
-              {isLoggedIn && (
-                <>
-                  <Link
-                    to="/transactions"
-                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                  >
-                    Transactions
-                  </Link>
-                  <Link
-                    to="/budgets"
-                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                  >
-                    Budgets
-                  </Link>
-                  <Link
-                    to="/categories"
-                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                  >
-                    Categories
-                  </Link>
-                </>
-              )}
-            </nav>
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <div className="flex-shrink-0">
+            <Link to="/" className="text-2xl font-semibold text-blue-600">
+              FinancePro
+            </Link>
           </div>
-          <div className="hidden sm:ml-6 sm:flex sm:items-center">
+
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center space-x-6">
+            <Link
+              to="/"
+              className="text-gray-600 hover:text-blue-600 transition-colors duration-300 ease-in-out font-medium"
+            >
+              Home
+            </Link>
+            {isLoggedIn && (
+              <>
+                <Link
+                  to="/transactions"
+                  className="text-gray-600 hover:text-blue-600 transition-colors duration-300 ease-in-out font-medium"
+                >
+                  Transactions
+                </Link>
+                <Link
+                  to="/budgets"
+                  className="text-gray-600 hover:text-blue-600 transition-colors duration-300 ease-in-out font-medium"
+                >
+                  Budgets
+                </Link>
+                <Link
+                  to="/categories"
+                  className="text-gray-600 hover:text-blue-600 transition-colors duration-300 ease-in-out font-medium"
+                >
+                  Categories
+                </Link>
+              </>
+            )}
+          </nav>
+
+          {/* Desktop Actions */}
+          <div className="hidden md:flex items-center space-x-4">
             {isLoggedIn ? (
               <>
                 <Link
                   to="/notifications"
-                  className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 relative"
+                  className="relative p-2 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-full transition-all duration-300 ease-in-out"
                 >
-                  <span className="sr-only">View notifications</span>
                   <svg
                     className="h-6 w-6"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
-                    aria-hidden="true"
                   >
                     <path
                       strokeLinecap="round"
@@ -95,32 +92,26 @@ const Header = () => {
                     />
                   </svg>
                   {notificationCount > 0 && (
-                    <span className="absolute top-0 right-0 block h-4 w-4 rounded-full bg-red-500 text-xs text-white text-center">
+                    <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full text-xs flex items-center justify-center text-white shadow-sm">
                       {notificationCount}
                     </span>
                   )}
                 </Link>
-
-                <div className="ml-3 relative">
-                  <div>
-                    <button
-                      onClick={() => navigate("/account")}
-                      className="bg-white rounded-full flex items-center text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                    >
-                      <span className="sr-only">Open user menu</span>
-                      <img
-                        className="h-8 w-8 rounded-full"
-                        src={user.avatarUrl}
-                        alt=""
-                      />
-                      <span className="ml-2 text-gray-700">{user.name}</span>
-                    </button>
-                  </div>
-                </div>
+                <button
+                  onClick={() => navigate("/account")}
+                  className="flex items-center space-x-2 text-gray-700 hover:bg-gray-100 px-3 py-2 rounded-lg transition-all duration-300 ease-in-out"
+                >
+                  <img
+                    className="h-8 w-8 rounded-full"
+                    src={user.avatarUrl}
+                    alt=""
+                  />
+                  <span>{user.name}</span>
+                </button>
                 <Button
                   variant="outline"
                   size="small"
-                  className="ml-4"
+                  className="text-gray-700 border-gray-300 hover:bg-gray-100 hover:text-blue-600 transition-all duration-300 ease-in-out rounded-md"
                   onClick={logout}
                 >
                   Logout
@@ -128,33 +119,38 @@ const Header = () => {
               </>
             ) : (
               <>
-                {/* For demo purposes, we'll use the toggle button; 
-                    In real app, these would navigate to login/signup pages */}
-                <Button onClick={toggleLogin}>Login</Button>
                 <Button
-                  variant="outline"
-                  className="ml-3"
                   onClick={toggleLogin}
+                  className="bg-blue-600 text-white hover:bg-blue-700 transition-all duration-300 ease-in-out rounded-md"
                 >
-                  Sign Up
+                  Login
                 </Button>
+                <Link to="/signup">
+                  <Button
+                    variant="outline"
+                    className="text-blue-600 border-blue-600 hover:bg-blue-50 transition-all duration-300 ease-in-out rounded-md"
+                  >
+                    Sign Up
+                  </Button>
+                </Link>
               </>
             )}
           </div>
-          <div className="-mr-2 flex items-center sm:hidden">
+
+          {/* Mobile Menu Button */}
+          <div className="md:hidden flex items-center">
             <button
               onClick={toggleMobileMenu}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+              className="p-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-lg transition-all duration-300 ease-in-out"
             >
               <span className="sr-only">Open main menu</span>
               {mobileMenuOpen ? (
                 <svg
-                  className="block h-6 w-6"
+                  className="h-6 w-6"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
-                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"
@@ -165,12 +161,11 @@ const Header = () => {
                 </svg>
               ) : (
                 <svg
-                  className="block h-6 w-6"
+                  className="h-6 w-6"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
-                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"
@@ -185,13 +180,13 @@ const Header = () => {
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="sm:hidden">
-          <div className="pt-2 pb-3 space-y-1">
+        <div className="md:hidden bg-white border-t border-gray-200">
+          <div className="px-4 pt-3 pb-4 space-y-2">
             <Link
               to="/"
-              className="bg-blue-50 border-blue-500 text-blue-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium"
+              className="block px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-md transition-all duration-300 ease-in-out"
             >
               Home
             </Link>
@@ -199,95 +194,97 @@ const Header = () => {
               <>
                 <Link
                   to="/transactions"
-                  className="border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium"
+                  className="block px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-md transition-all duration-300 ease-in-out"
                 >
                   Transactions
                 </Link>
                 <Link
                   to="/budgets"
-                  className="border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium"
+                  className="block px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-md transition-all duration-300 ease-in-out"
                 >
                   Budgets
                 </Link>
                 <Link
                   to="/categories"
-                  className="border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium"
+                  className="block px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-md transition-all duration-300 ease-in-out"
                 >
                   Categories
                 </Link>
               </>
             )}
           </div>
-          {isLoggedIn ? (
-            <div className="pt-4 pb-3 border-t border-gray-200">
-              <div className="flex items-center px-4">
-                <div className="flex-shrink-0">
+          <div className="border-t border-gray-200 px-4 py-3">
+            {isLoggedIn ? (
+              <>
+                <div className="flex items-center space-x-3 mb-3">
                   <img
                     className="h-10 w-10 rounded-full"
                     src={user.avatarUrl}
                     alt=""
                   />
-                </div>
-                <div className="ml-3">
-                  <div className="text-base font-medium text-gray-800">
-                    {user.name}
+                  <div>
+                    <div className="font-medium text-gray-800">{user.name}</div>
+                    <div className="text-sm text-gray-500">user@example.com</div>
                   </div>
-                  <div className="text-sm font-medium text-gray-500">
-                    user@example.com
-                  </div>
-                </div>
-                <Link
-                  to="/notifications"
-                  className="ml-auto p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 relative"
-                >
-                  <span className="sr-only">View notifications</span>
-                  <svg
-                    className="h-6 w-6"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    aria-hidden="true"
+                  <Link
+                    to="/notifications"
+                    className="ml-auto p-2 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-full transition-all duration-300 ease-in-out relative"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                    />
-                  </svg>
-                  {notificationCount > 0 && (
-                    <span className="absolute top-0 right-0 block h-4 w-4 rounded-full bg-red-500 text-xs text-white text-center">
-                      {notificationCount}
-                    </span>
-                  )}
-                </Link>
-              </div>
-              <div className="mt-3 space-y-1">
+                    <svg
+                      className="h-6 w-6"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                      />
+                    </svg>
+                    {notificationCount > 0 && (
+                      <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full text-xs flex items-center justify-center text-white shadow-sm">
+                        {notificationCount}
+                      </span>
+                    )}
+                  </Link>
+                </div>
                 <Link
                   to="/account"
-                  className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                  className="block px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-md transition-all duration-300 ease-in-out"
                 >
                   Your Profile
                 </Link>
                 <button
                   onClick={logout}
-                  className="block w-full text-left px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                  className="block w-full text-left px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-md transition-all duration-300 ease-in-out"
                 >
                   Sign out
                 </button>
+              </>
+            ) : (
+              <div className="space-y-3">
+                <Button
+                  fullWidth
+                  onClick={toggleLogin}
+                  className="bg-blue-600 text-white hover:bg-blue-700 transition-all duration-300 ease-in-out rounded-md"
+                >
+                  Login
+                </Button>
+                <Link to="/signup">
+                  <Button
+                    variant="outline"
+                    fullWidth
+                    className="text-blue-600 border-blue-600 hover:bg-blue-50 transition-all duration-300 ease-in-out rounded-md"
+                  >
+                    Sign Up
+                  </Button>
+                </Link>
               </div>
-            </div>
-          ) : (
-            <div className="pt-4 pb-3 border-t border-gray-200 px-4 flex flex-col space-y-3">
-              <Button fullWidth onClick={toggleLogin}>
-                Login
-              </Button>
-              <Button variant="outline" fullWidth onClick={toggleLogin}>
-                Sign Up
-              </Button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
     </header>
