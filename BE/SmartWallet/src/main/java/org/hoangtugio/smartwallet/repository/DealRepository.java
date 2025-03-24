@@ -13,5 +13,5 @@ public interface DealRepository extends JpaRepository<Deal,Integer> {
 
     List<Deal> findByType(boolean type);
 
-    List<Deal> findAllByBudget_Id(int budgetId);
+    List<Deal> findAllByBudget_IdAndAccount_Id(int budgetId, int accountId);
 }

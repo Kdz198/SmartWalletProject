@@ -62,8 +62,8 @@ public class DealController {
         return dealService.fillterByType(type);
     }
 
-    @GetMapping("findbybudget")
-    public List<Deal> findByBudgetId(@RequestParam int id){
-        return dealService.findByBudget(id);
+    @GetMapping("findbybudgetandaccount")
+    public List<Deal> findByBudgetId(@RequestParam int id,@RequestParam int accountId){
+        return dealService.findByBudgetAndAccount(id, accountId);
     }
 }

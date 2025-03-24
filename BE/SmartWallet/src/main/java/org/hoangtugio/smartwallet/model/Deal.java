@@ -28,7 +28,7 @@ public class Deal {
     private boolean type;
 
     @Positive(message = "Total phải là số dương")
-    private long total;
+    private int total;
 
     @Nationalized
     private String description;

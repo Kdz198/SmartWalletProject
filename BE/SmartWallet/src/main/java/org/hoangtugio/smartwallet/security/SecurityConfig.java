@@ -28,8 +28,8 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable()) // Tắt CSRF cho API
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/otp/**").permitAll() // Endpoint công khai
-                        .requestMatchers("/api/**").authenticated() // Yêu cầu đăng nhập
+                        .requestMatchers("/api/**").permitAll() // Endpoint công khai
+                        .requestMatchers("/api/notification").authenticated() // Yêu cầu đăng nhập
                         .anyRequest().authenticated() // Các request khác cần đăng nhập
                 )
                 .formLogin(form -> form
