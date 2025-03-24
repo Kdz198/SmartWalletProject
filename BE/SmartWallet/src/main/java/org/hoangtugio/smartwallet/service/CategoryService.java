@@ -16,26 +16,22 @@ public class CategoryService {
     @Autowired
     CategoryRepository categoryRepository;
 
-    public List<Category> getAll()
-    {
+    public List<Category> getAll() {
         return categoryRepository.findAll();
     }
 
-    public Category create ( Category category)
-    {
+    public Category create(Category category) {
         return categoryRepository.save(category);
     }
 
-    public void deleteById ( int id)
-    {
+    public void deleteById(int id) {
         if(!categoryRepository.existsById(id)){
             throw new CustomException("Id không tồn tại !!", HttpStatus.BAD_REQUEST);
         }
         else categoryRepository.deleteById(id);
     }
 
-    public Category update ( Category category)
-    {
+    public Category update(Category category) {
 
         if(!categoryRepository.existsById(category.getId())){
             throw new CustomException("Category không tồn tại !!", HttpStatus.BAD_REQUEST);
@@ -45,6 +41,11 @@ public class CategoryService {
 
     public Category getById(int id){
         return categoryRepository.findById(id).orElseThrow();
+    }
+
+    public List<Category> showCateByAccountId(int accountId) {
+        return categoryRepository.findByAccountId(accountId);
+
     }
 
 }

@@ -45,4 +45,16 @@ public class DealController {
         dealService.deleteById(id);
     }
 
+    @GetMapping("/findbyaccount")
+    public List<Deal> findByAccountId ( @RequestParam int id)
+    {
+        return dealService.findByAccountId(id);
+    }
+
+    @GetMapping("/findbyaccountandcate")
+    public List<Deal> findByAccountIDandCateId ( @RequestParam int accountId, int CateId)
+    {
+        return dealService.findByAccountIDAndCateId(accountId, CateId);
+    }
+
 }

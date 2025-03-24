@@ -38,4 +38,6 @@ public class AccountController {
     public void deleteAccount(@RequestParam int id) {
         accountService.deleteAccount(id);
     }
+
+
 }

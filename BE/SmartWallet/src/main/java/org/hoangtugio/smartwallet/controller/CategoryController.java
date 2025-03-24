@@ -40,6 +40,11 @@ public class CategoryController {
         categoryService.deleteById(id);
     }
 
+    @GetMapping("/findbyaccountid")
+    public List<Category> findByAccountId ( @RequestParam int accountId)
+    {
+        return categoryService.showCateByAccountId(accountId);
+    }
 
 
 }

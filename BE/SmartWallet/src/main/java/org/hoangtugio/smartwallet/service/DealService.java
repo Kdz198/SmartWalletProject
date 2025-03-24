@@ -51,5 +51,16 @@ public class DealService {
         return dealRepository.findById(id).orElseThrow();
     }
 
+    public List<Deal> findByAccountId ( int accountId)
+    {
+        return dealRepository.findByAccount_Id(accountId);
+    }
+
+    public List<Deal> findByAccountIDAndCateId ( int accountId, int cateId)
+    {
+        return dealRepository.findByAccountIdAndCategoryId(accountId, cateId);
+
+    }
+
 
 }
