@@ -1,23 +1,23 @@
 import React, { useState } from "react";
 import Button from "../common/Button";
-import { useAuth } from "../../context/AuthContext";
+// import { useAuth } from "../../context/AuthContext";
 
 const LoginForm = ({ onClose }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const { login } = useAuth();
+  //   const { login } = useAuth();
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setError("");
 
-    const success = login(email, password); // Gọi hàm login từ context
-    if (success) {
-      if (onClose) onClose(); // Đóng modal nếu có prop onClose
-    } else {
-      setError("Invalid email or password");
-    }
+    // const success = login(email, password); // Gọi hàm login từ context
+    // if (success) {
+    //   if (onClose) onClose(); // Đóng modal nếu có prop onClose
+    // } else {
+    //   setError("Invalid email or password");
+    // }
   };
 
   return (

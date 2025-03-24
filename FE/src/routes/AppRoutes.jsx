@@ -1,6 +1,9 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
+//auth
+import LoginForm from "../components/auth/LoginForm";
+
 // Pages
 import Home from "../pages/Home";
 import SignUp from "../pages/SignUp";
@@ -100,7 +103,8 @@ const AppRoutes = () => {
           />
         }
       />
-     
+      <Route path="/login" element={<LoginForm />} />
+
 
       {/* Fallback for unknown routes */}
       <Route path="*" element={<Navigate to="/" replace />} />

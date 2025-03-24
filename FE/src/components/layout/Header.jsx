@@ -119,16 +119,15 @@ const Header = () => {
               </>
             ) : (
               <>
-                <Button
-                  onClick={toggleLogin}
-                  className="bg-blue-600 text-white hover:bg-blue-700 transition-all duration-300 ease-in-out rounded-md"
-                >
-                  Login
-                </Button>
-                <Link to="/signup">
+                {/* For demo purposes, we'll use the toggle button; 
+                    In real app, these would navigate to login/signup pages */}
+                <Link to="/login" className="text-gray-500 hover:text-gray-700">
+                  <Button onClick={toggleLogin}>Login</Button>
                   <Button
                     variant="outline"
-                    className="text-blue-600 border-blue-600 hover:bg-blue-50 transition-all duration-300 ease-in-out rounded-md"
+                    className="ml-3"
+                    onClick={toggleLogin}
+
                   >
                     Sign Up
                   </Button>
