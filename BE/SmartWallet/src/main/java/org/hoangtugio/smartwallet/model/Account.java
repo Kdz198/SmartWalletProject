@@ -44,4 +44,12 @@ public class Account {
     @Column(name = "Dob")
     @Past(message = "Ngày sinh phải là ngày trong quá khứ")
     private Date dob;
+
+    public Account(String name, String pass, String email, boolean gender, Date dob) {
+        this.name = name;
+        this.pass = pass;
+        this.email = email;
+        this.gender = gender;
+        this.dob = dob;
+    }
 }

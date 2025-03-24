@@ -28,7 +28,7 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable()) // Tắt CSRF cho API
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/deal/**").permitAll() // Endpoint công khai
+                        .requestMatchers("/otp/**").permitAll() // Endpoint công khai
                         .requestMatchers("/api/**").authenticated() // Yêu cầu đăng nhập
                         .anyRequest().authenticated() // Các request khác cần đăng nhập
                 )

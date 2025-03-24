@@ -23,4 +23,9 @@ public class Category {
     @JoinColumn(name = "AccountId")
     Account account;
 
+    public Category(String name, String img, Account account) {
+        this.name = name;
+        this.img = img;
+        this.account = account;
+    }
 }
