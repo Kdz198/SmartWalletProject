@@ -171,9 +171,12 @@ const LandingPage = ({ onLogin }) => {
             finances.
           </p>
           <div className="mt-8">
-            <Button size="large" onClick={onLogin}>
-              Sign Up Now
-            </Button>
+            {/* Thay Button bằng Link */}
+            <Link to="/signup">
+              <Button size="large">
+                Sign Up Now
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
