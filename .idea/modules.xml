@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/BE/SmartWallet/SmartWallet.iml" filepath="$PROJECT_DIR$/BE/SmartWallet/SmartWallet.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/SmartWalletProject.iml" filepath="$PROJECT_DIR$/.idea/SmartWalletProject.iml" />
     </modules>
   </component>
