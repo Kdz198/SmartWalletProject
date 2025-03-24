@@ -6,7 +6,7 @@ import Home from "../pages/Home";
 import Login from "../pages/Login";
 import SignUp from "../pages/SignUp";
 import AccountPage from "../pages/AccountPage";
-import Transactions from "../pages/Transactions";
+import TransactionPage from "../pages/TransactionPage";
 import Dashboard from "../pages/DashboardPage";
 
 // Placeholder components for pages that need backend
@@ -56,13 +56,13 @@ const AppRoutes = () => {
     <Routes>
       {/* Public routes */}
       <Route path="/" element={<Home />} />
-
       <Route path="/login" element={<Login />} />
       <Route path="/account" element={<AccountPage />} />
-      <Route path="/signup" element={<SignUp />} /> {/* Thêm route cho SignUp */}
-      <Route path="/transactions" element={<Transactions />} />
-      <Route path="/dashboard" element={<Dashboard />} /> {/* Thêm route cho SignUp */}
-
+      <Route path="/signup" element={<SignUp />} />{" "}
+      {/* Thêm route cho SignUp */}
+      <Route path="/transactions" element={<TransactionPage />} />
+      <Route path="/dashboard" element={<Dashboard />} />{" "}
+      {/* Thêm route cho SignUp */}
       {/* Routes that need backend (using placeholders) */}
       <Route
         path="/budgets"
