@@ -1,6 +1,7 @@
 package org.hoangtugio.smartwallet.controller;
 
 
+import jakarta.validation.Valid;
 import org.hoangtugio.smartwallet.model.Deal;
 import org.hoangtugio.smartwallet.service.DealService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,13 +23,13 @@ public class DealController {
     }
 
     @PostMapping("/create")
-    public Deal create (@RequestBody Deal deal)
+    public Deal create (@RequestBody @Valid Deal deal)
     {
         return dealService.create(deal);
     }
 
     @PostMapping("/update")
-    public Deal update (@RequestBody  Deal deal)
+    public Deal update (@RequestBody @Valid Deal deal)
     {
         return dealService.update(deal);
     }
@@ -37,6 +38,11 @@ public class DealController {
     public Deal findById (@RequestParam int id)
     {
         return dealService.findById(id);
+    }
+
+    @DeleteMapping("/delete")
+    public void delete(@RequestParam int id){
+        dealService.deleteById(id);
     }
 
 }

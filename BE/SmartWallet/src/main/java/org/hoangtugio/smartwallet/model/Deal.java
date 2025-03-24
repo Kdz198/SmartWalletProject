@@ -2,10 +2,14 @@ package org.hoangtugio.smartwallet.model;
 
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Nationalized;
+
+import java.sql.Date;
 
 @Entity
 @Data
@@ -15,18 +19,29 @@ public class Deal {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    int id;
-    boolean type;
-    long total;
+    private int id;
+
+    @NotNull(message = "Type không được để trống")
+    private boolean type;
+
+    @Positive(message = "Total phải là số dương")
+    private long total;
+
     @Nationalized
-    String description;
-    java.sql.Date date;
-    boolean method;
+    private String description;
+
+    @NotNull(message = "Date không được để trống")
+    private Date date;
+
+    @NotNull(message = "Method không được để trống")
+    private boolean method;
+
     @ManyToOne
     @JoinColumn(name = "CateId", nullable = true)
-    Category category;
+    private Category category;
+
     @ManyToOne
-    @JoinColumn(name = "AccountId")
+    @JoinColumn(name = "AccountId",nullable = false)
     Account account;
 
 

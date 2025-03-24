@@ -1,9 +1,11 @@
 package org.hoangtugio.smartwallet.service;
 
 
+import org.hoangtugio.smartwallet.exception.CustomException;
 import org.hoangtugio.smartwallet.model.Category;
 import org.hoangtugio.smartwallet.repository.CategoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -26,13 +28,23 @@ public class CategoryService {
 
     public void deleteById ( int id)
     {
-        categoryRepository.deleteById(id);
+        if(!categoryRepository.existsById(id)){
+            throw new CustomException("Id không tồn tại !!", HttpStatus.BAD_REQUEST);
+        }
+        else categoryRepository.deleteById(id);
     }
 
     public Category update ( Category category)
     {
-        Category category1 = categoryRepository.findById(category.getId()).orElseThrow();
-        return categoryRepository.save(category);
+
+        if(!categoryRepository.existsById(category.getId())){
+            throw new CustomException("Category không tồn tại !!", HttpStatus.BAD_REQUEST);
+        }
+        else return categoryRepository.save(category);
+    }
+
+    public Category getById(int id){
+        return categoryRepository.findById(id).orElseThrow();
     }
 
 }
