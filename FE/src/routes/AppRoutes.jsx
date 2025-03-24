@@ -1,12 +1,11 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
-//auth
-import LoginForm from "../components/auth/LoginForm";
-
 // Pages
 import Home from "../pages/Home";
+import Login from "../pages/Login";
 import SignUp from "../pages/SignUp";
+import AccountPage from "../pages/AccountPage";
 
 // Placeholder components for pages that need backend
 const PlaceholderPage = ({ title, description }) => (
@@ -55,8 +54,9 @@ const AppRoutes = () => {
     <Routes>
       {/* Public routes */}
       <Route path="/" element={<Home />} />
-      <Route path="/signup" element={<SignUp />} /> {/* Thêm route cho SignUp */}
-
+      <Route path="/signup" element={<SignUp />} />{" "}
+      <Route path="/login" element={<Login />} />
+      <Route path="/account" element={<AccountPage />} />
       {/* Routes that need backend (using placeholders) */}
       <Route
         path="/transactions"
@@ -94,18 +94,6 @@ const AppRoutes = () => {
           />
         }
       />
-      <Route
-        path="/account"
-        element={
-          <PlaceholderPage
-            title="Account Settings"
-            description="This page will allow users to manage their profile, preferences, and security settings."
-          />
-        }
-      />
-      <Route path="/login" element={<LoginForm />} />
-
-
       {/* Fallback for unknown routes */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
