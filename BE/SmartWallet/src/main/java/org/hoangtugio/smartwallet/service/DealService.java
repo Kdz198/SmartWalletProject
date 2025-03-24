@@ -45,7 +45,6 @@ public class DealService {
         }
         return saved;
     }
-
     public void deleteById ( int id)
     {
         if(!dealRepository.existsById(id)){

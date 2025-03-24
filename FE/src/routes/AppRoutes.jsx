@@ -7,6 +7,7 @@ import LoginForm from "../components/auth/LoginForm";
 // Pages
 import Home from "../pages/Home";
 import SignUp from "../pages/SignUp";
+import Dashboard from "../pages/DashboardPage";
 
 // Placeholder components for pages that need backend
 const PlaceholderPage = ({ title, description }) => (
@@ -56,6 +57,7 @@ const AppRoutes = () => {
       {/* Public routes */}
       <Route path="/" element={<Home />} />
       <Route path="/signup" element={<SignUp />} /> {/* Thêm route cho SignUp */}
+      <Route path="/dashboard" element={<Dashboard />} /> {/* Thêm route cho SignUp */}
 
       {/* Routes that need backend (using placeholders) */}
       <Route

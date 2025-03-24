@@ -22,8 +22,8 @@ public class Deal {
     private int id;
 
 
-    //1:pay
-    //2:earn
+    //true:pay
+    //false:earn
     @NotNull(message = "Type không được để trống")
     private boolean type;
 
