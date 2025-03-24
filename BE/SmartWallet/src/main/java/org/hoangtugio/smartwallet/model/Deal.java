@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Nationalized;
 
 @Entity
 @Data
@@ -17,6 +18,7 @@ public class Deal {
     int id;
     boolean type;
     long total;
+    @Nationalized
     String description;
     java.sql.Date date;
     boolean method;

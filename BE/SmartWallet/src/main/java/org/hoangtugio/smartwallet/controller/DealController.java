@@ -4,15 +4,12 @@ package org.hoangtugio.smartwallet.controller;
 import org.hoangtugio.smartwallet.model.Deal;
 import org.hoangtugio.smartwallet.service.DealService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/transaction")
+@RequestMapping("/api/deal")
 public class DealController {
 
     @Autowired
@@ -25,19 +22,19 @@ public class DealController {
     }
 
     @PostMapping("/create")
-    public Deal create (Deal deal)
+    public Deal create (@RequestBody Deal deal)
     {
         return dealService.create(deal);
     }
 
     @PostMapping("/update")
-    public Deal update (Deal deal)
+    public Deal update (@RequestBody  Deal deal)
     {
         return dealService.update(deal);
     }
 
     @GetMapping("/find")
-    public Deal findById (int id)
+    public Deal findById (@RequestParam int id)
     {
         return dealService.findById(id);
     }
