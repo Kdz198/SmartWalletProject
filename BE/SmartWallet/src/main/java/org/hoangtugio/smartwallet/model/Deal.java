@@ -25,7 +25,9 @@ public class Deal {
     @ManyToOne
     @JoinColumn(name = "CateId", nullable = true)
     Category category;
-
+    @ManyToOne
+    @JoinColumn(name = "AccountId")
+    Account account;
 
 
 }
