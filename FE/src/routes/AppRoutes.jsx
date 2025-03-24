@@ -6,6 +6,8 @@ import Home from "../pages/Home";
 import Login from "../pages/Login";
 import SignUp from "../pages/SignUp";
 import AccountPage from "../pages/AccountPage";
+import Transactions from "../pages/Transactions";
+import Dashboard from "../pages/DashboardPage";
 
 // Placeholder components for pages that need backend
 const PlaceholderPage = ({ title, description }) => (
@@ -54,19 +56,14 @@ const AppRoutes = () => {
     <Routes>
       {/* Public routes */}
       <Route path="/" element={<Home />} />
-      <Route path="/signup" element={<SignUp />} />{" "}
+
       <Route path="/login" element={<Login />} />
       <Route path="/account" element={<AccountPage />} />
+      <Route path="/signup" element={<SignUp />} /> {/* Thêm route cho SignUp */}
+      <Route path="/transactions" element={<Transactions />} />
+      <Route path="/dashboard" element={<Dashboard />} /> {/* Thêm route cho SignUp */}
+
       {/* Routes that need backend (using placeholders) */}
-      <Route
-        path="/transactions"
-        element={
-          <PlaceholderPage
-            title="Transactions"
-            description="This page will display the user's financial transactions, with filtering, sorting, and search capabilities."
-          />
-        }
-      />
       <Route
         path="/budgets"
         element={

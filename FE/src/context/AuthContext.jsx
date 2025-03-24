@@ -1,30 +1,48 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
 
+  // Kiểm tra trạng thái đăng nhập khi load lại trang
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch("http://localhost:8080/api/account/user", {
+          method: "GET",
+          credentials: "include",
+        });
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+        }
+      } catch (error) {
+        console.error("Không thể kiểm tra trạng thái đăng nhập:", error);
+        setUser(null);
+      }
+    };
+    checkAuth();
+  }, []);
+
   const login = async (email, password) => {
     try {
-      // Gửi yêu cầu POST tới /login của Spring Security
       const loginResponse = await fetch("http://localhost:8080/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
         },
         body: new URLSearchParams({
-          username: email, // Spring Security mặc định dùng "username"
+          username: email,
           password: password,
         }),
-        credentials: "include", // Gửi cookie/session
+        credentials: "include",
       });
 
       if (!loginResponse.ok) {
         throw new Error("Invalid email or password");
       }
 
-      // Gọi /api/account/user để lấy thông tin người dùng
       const userResponse = await fetch("http://localhost:8080/api/account/user", {
         method: "GET",
         credentials: "include",
@@ -35,7 +53,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       const userData = await userResponse.json();
-      setUser(userData); // Lưu thông tin người dùng
+      setUser(userData);
       return true;
     } catch (error) {
       console.error(error);
@@ -43,12 +61,16 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    fetch("http://localhost:8080/logout", {
-      method: "POST",
-      credentials: "include",
-    });
+  const logout = async () => {
+    try {
+      await fetch("http://localhost:8080/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+      setUser(null);
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
   };
 
   return (

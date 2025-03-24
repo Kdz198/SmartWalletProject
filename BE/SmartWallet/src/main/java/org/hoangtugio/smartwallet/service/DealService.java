@@ -34,8 +34,10 @@ public class DealService {
         Deal saved = dealRepository.save(deal);
 
         //Nếu tạo dela mà thêm vào budget luôn thì xét coi là tổng số tiền của deal trong budget có lớn hơn mục tiêu của budget hay không
-        Budget budget = budgetService.getBudgetById(saved.getBudget().getId());
-        if(budget != null) {
+
+        if(deal.getBudget()!=null) {
+
+            Budget budget = budgetService.getBudgetById(saved.getBudget().getId());
             if (budget.getTotal() <= caculateActualTotalInBudget(deal.getBudget().getId(), deal.getAccount().getId())) {
                 int money = (int) (caculateActualTotalInBudget(deal.getBudget().getId(), deal.getAccount().getId()) - budget.getTotal());
                 notificationService.save(saved.getAccount(), money);
@@ -43,7 +45,6 @@ public class DealService {
         }
         return saved;
     }
-
     public void deleteById ( int id)
     {
         if(!dealRepository.existsById(id)){
