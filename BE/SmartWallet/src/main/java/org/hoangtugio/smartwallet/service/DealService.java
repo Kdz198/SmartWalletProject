@@ -27,17 +27,17 @@ public class DealService {
         return dealRepository.findAll();
     }
 
+
     @Transactional
     public Deal create (Deal deal)
     {
         Deal saved = dealRepository.save(deal);
+
+        //Nếu tạo dela mà thêm vào budget luôn thì xét coi là tổng số tiền của deal trong budget có lớn hơn mục tiêu của budget hay không
         Budget budget = budgetService.getBudgetById(saved.getBudget().getId());
-        System.out.println("Total budget:"+budget.getTotal());
-        System.out.println("Actual total:"+caculateActualTotalInBudget(deal.getBudget().getId(),deal.getAccount().getId()));
         if(budget != null) {
             if (budget.getTotal() <= caculateActualTotalInBudget(deal.getBudget().getId(), deal.getAccount().getId())) {
                 int money = (int) (caculateActualTotalInBudget(deal.getBudget().getId(), deal.getAccount().getId()) - budget.getTotal());
-                System.out.println(money);
                 notificationService.save(saved.getAccount(), money);
             }
         }
@@ -52,6 +52,8 @@ public class DealService {
         else dealRepository.deleteById(id);
     }
 
+    //Hàm này thực chất là hành động thêm deal vào budget
+    //xét coi là tổng số tiền của deal trong budget có lớn hơn mục tiêu của budget hay không
     @Transactional
     public Deal update (Deal deal)
     {
@@ -61,12 +63,9 @@ public class DealService {
         }
         Deal saved = dealRepository.save(deal);
         Budget budget = budgetService.getBudgetById(saved.getBudget().getId());
-        System.out.println("Total budget:"+budget.getTotal());
-        System.out.println("Actual total:"+caculateActualTotalInBudget(deal.getBudget().getId(),deal.getAccount().getId()));
         if(budget.getTotal()<= caculateActualTotalInBudget(deal.getBudget().getId(),deal.getAccount().getId())){
 
             int money = (int) (caculateActualTotalInBudget(deal.getBudget().getId(),deal.getAccount().getId()) - budget.getTotal());
-            System.out.println("Số tiền quá:"+money);
             notificationService.save(saved.getAccount(),money);
         }
         return saved;
