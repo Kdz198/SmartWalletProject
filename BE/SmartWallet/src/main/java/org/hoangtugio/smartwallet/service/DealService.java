@@ -1,9 +1,11 @@
 package org.hoangtugio.smartwallet.service;
 
 
+import org.hoangtugio.smartwallet.exception.CustomException;
 import org.hoangtugio.smartwallet.model.Deal;
 import org.hoangtugio.smartwallet.repository.DealRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -31,7 +33,10 @@ public class DealService {
 
     public Deal update (Deal deal)
     {
-        Deal deal1 = dealRepository.findById(deal.getId()).orElseThrow();
+        if (!dealRepository.existsById(deal.getId()))
+        {
+            throw new CustomException("Deal Not Exist", HttpStatus.CONFLICT);
+        }
 
         return dealRepository.save(deal);
     }
