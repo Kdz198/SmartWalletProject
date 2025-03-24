@@ -10,4 +10,8 @@ public interface DealRepository extends JpaRepository<Deal,Integer> {
     List<Deal> findByAccount_Id(int accountId);
 
     List<Deal> findByAccountIdAndCategoryId(int accountId, int categoryId);
+
+    List<Deal> findByType(boolean type);
+
+    List<Deal> findAllByBudget_Id(int budgetId);
 }

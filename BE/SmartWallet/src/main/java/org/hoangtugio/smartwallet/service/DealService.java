@@ -59,7 +59,14 @@ public class DealService {
     public List<Deal> findByAccountIDAndCateId ( int accountId, int cateId)
     {
         return dealRepository.findByAccountIdAndCategoryId(accountId, cateId);
+    }
 
+    public List<Deal> fillterByType(boolean type){
+        return dealRepository.findByType(type);
+    }
+
+    public List<Deal> findByBudget(int budgetId){
+        return dealRepository.findAllByBudget_Id(budgetId);
     }
 
 

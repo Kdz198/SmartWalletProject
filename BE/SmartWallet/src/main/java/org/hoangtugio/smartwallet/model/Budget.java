@@ -1,6 +1,5 @@
 package org.hoangtugio.smartwallet.model;
 
-
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -15,12 +14,14 @@ import java.sql.Date;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Deal {
-
+public class Budget {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
+    @Column(name = "Name")
+    @Nationalized
+    private String name;
 
     //1:pay
     //2:earn
@@ -30,25 +31,10 @@ public class Deal {
     @Positive(message = "Total phải là số dương")
     private long total;
 
-    @Nationalized
-    private String description;
-
-    @NotNull(message = "Date không được để trống")
-    private Date date;
-
-    @NotNull(message = "Method không được để trống")
-    private boolean method;
-
-    @ManyToOne
-    @JoinColumn(name = "CateId", nullable = true)
-    private Category category;
+    @NotNull(message = "Month không được để trống")
+    private int month;
 
     @ManyToOne
     @JoinColumn(name = "AccountId",nullable = false)
     Account account;
-
-    @ManyToOne
-    @JoinColumn(name = "BudgetId",nullable = true)
-    Budget budget;
-
 }

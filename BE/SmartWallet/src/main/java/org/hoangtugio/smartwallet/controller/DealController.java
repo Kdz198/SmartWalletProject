@@ -57,4 +57,13 @@ public class DealController {
         return dealService.findByAccountIDAndCateId(accountId, CateId);
     }
 
+    @GetMapping("findbytype")
+    public List<Deal> findByType(@RequestParam boolean type){
+        return dealService.fillterByType(type);
+    }
+
+    @GetMapping("findbybudget")
+    public List<Deal> findByBudgetId(@RequestParam int id){
+        return dealService.findByBudget(id);
+    }
 }
