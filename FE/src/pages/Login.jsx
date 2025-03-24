@@ -1,142 +1,181 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // Thêm useNavigate
-import Button from "../components/common/Button";
+import { useNavigate } from "react-router-dom";
+import { Eye, EyeOff, AlertCircle, CheckCircle } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 const Login = ({ onClose }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [apiLog, setApiLog] = useState([]);
   const { login } = useAuth();
-  const navigate = useNavigate(); // Khởi tạo useNavigate
+  const navigate = useNavigate();
+
+  const logApiEvent = (type, message, details = {}) => {
+    const newLog = {
+      id: Date.now(),
+      type,
+      message,
+      timestamp: new Date().toISOString(),
+      details,
+    };
+    setApiLog((prev) => [newLog, ...prev].slice(0, 10));
+    console.log(`[${type.toUpperCase()}]`, message, details);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    const success = await login(email, password);
-    if (success) {
-      if (onClose) onClose(); // Đóng modal nếu có
-      navigate("/account"); // Chuyển hướng đến /account
-    } else {
-      setError("Invalid email or password");
+    try {
+      logApiEvent("request", "Login attempt initiated", { email });
+
+      const success = await login(email, password); // Assuming login returns a boolean
+
+      if (success) {
+        logApiEvent("success", "Login successful", { email });
+
+        if (onClose) onClose();
+        navigate("/account");
+      } else {
+        const errorDetails = { code: "invalid_credentials" };
+        logApiEvent("error", "Login failed", errorDetails);
+
+        setError("Incorrect email or password");
+      }
+    } catch (err) {
+      logApiEvent("exception", "Unexpected error during login", {
+        message: err.message,
+        stack: err.stack,
+      });
+
+      setError("An unexpected error occurred. Please try again.");
     }
   };
 
   return (
-    <div className="w-full max-w-md mx-auto bg-gradient-to-br from-white to-gray-50 p-8 rounded-xl shadow-lg transform transition-all duration-300 hover:shadow-xl">
-      {/* Header */}
-      <h2 className="text-3xl font-extrabold text-gray-900 mb-8 text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-500">
-        Welcome Back
-      </h2>
-
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Email Field */}
-        <div className="relative group">
-          <label
-            htmlFor="email"
-            className="block text-sm font-medium text-gray-600 mb-2 transition-colors group-hover:text-blue-500"
-          >
-            Email
-          </label>
-          <input
-            type="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-3 bg-gray-100 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent outline-none transition-all duration-200 placeholder-gray-400"
-            placeholder="you@example.com"
-            required
-          />
-          <span className="absolute inset-y-0 right-3 flex items-center text-gray-400 top-8">
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-              />
-            </svg>
-          </span>
-        </div>
-
-        {/* Password Field */}
-        <div className="relative group">
-          <label
-            htmlFor="password"
-            className="block text-sm font-medium text-gray-600 mb-2 transition-colors group-hover:text-blue-500"
-          >
-            Password
-          </label>
-          <input
-            type="password"
-            id="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-3 bg-gray-100 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent outline-none transition-all duration-200 placeholder-gray-400"
-            placeholder="••••••••"
-            required
-          />
-          <span className="absolute inset-y-0 right-3 flex items-center text-gray-400 top-8">
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm0 2c-2.76 0-5 2.24-5 5h10c0-2.76-2.24-5-5-5z"
-              />
-            </svg>
-          </span>
-        </div>
-
-        {/* Error Message */}
-        {error && (
-          <p className="text-red-500 text-sm text-center bg-red-50 p-2 rounded-md animate-pulse">
-            {error}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-100 p-8 space-y-6 transform transition-all hover:scale-[1.02] hover:shadow-3xl">
+        {/* Header */}
+        <div className="text-center">
+          <h2 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-500 mb-4">
+            Finance Tracker
+          </h2>
+          <p className="text-gray-500 mb-8">
+            Manage your finances with precision
           </p>
-        )}
+        </div>
 
-        {/* Buttons */}
-        <div className="flex justify-end space-x-4">
-          <Button
+        {/* Login Form */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Email Input */}
+          <div>
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Email Address
+            </label>
+            <input
+              type="email"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+              placeholder="Enter your email"
+              required
+            />
+          </div>
+
+          {/* Password Input */}
+          <div className="relative">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Password
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all pr-12"
+                placeholder="Enter your password"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-blue-600 transition-colors"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+          </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center space-x-2 animate-pulse">
+              <AlertCircle size={20} />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Login Button */}
+          <button
             type="submit"
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105"
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:scale-[1.02] shadow-md"
           >
             Sign In
-          </Button>
-          {onClose && (
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="border-gray-300 text-gray-700 font-semibold py-3 px-6 rounded-lg hover:bg-gray-100 transition-all duration-300 transform hover:scale-105"
-            >
-              Cancel
-            </Button>
-          )}
-        </div>
-      </form>
+          </button>
+        </form>
 
-      {/* Footer Link */}
-      <p className="mt-6 text-center text-sm text-gray-500">
-        Don’t have an account?{" "}
-        <a
-          href="/signup"
-          className="text-blue-500 hover:text-blue-700 font-medium transition-colors duration-200"
-        >
-          Sign up here
-        </a>
-      </p>
+        {/* Additional Links */}
+        <div className="text-center">
+          <a
+            href="/forgot-password"
+            className="text-sm text-blue-500 hover:text-blue-700"
+          >
+            Forgot Password?
+          </a>
+          <p className="mt-4 text-sm text-gray-600">
+            Don't have an account?{" "}
+            <a
+              href="/signup"
+              className="text-blue-500 font-medium hover:text-blue-700"
+            >
+              Sign Up
+            </a>
+          </p>
+        </div>
+
+        {/* API Console Log */}
+        {apiLog.length > 0 && (
+          <div className="mt-6 bg-gray-50 rounded-xl p-4 max-h-40 overflow-y-auto">
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">
+              API Console
+            </h3>
+            {apiLog.map((log) => (
+              <div
+                key={log.id}
+                className={`p-2 rounded-md mb-1 text-xs ${
+                  log.type === "error"
+                    ? "bg-red-50 text-red-700"
+                    : log.type === "success"
+                    ? "bg-green-50 text-green-700"
+                    : "bg-gray-100 text-gray-700"
+                }`}
+              >
+                [{log.type.toUpperCase()}] {log.message}
+                <div className="text-xs text-gray-500">{log.timestamp}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
