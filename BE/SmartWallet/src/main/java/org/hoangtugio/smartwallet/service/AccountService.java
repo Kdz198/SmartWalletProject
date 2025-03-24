@@ -48,4 +48,9 @@ public class AccountService {
         }
         else throw new CustomException("Account không tồn tại !!",HttpStatus.BAD_REQUEST);
     }
+
+    public Account findByEmail(String username) {
+
+        return accountRepository.findByEmail(username);
+    }
 }

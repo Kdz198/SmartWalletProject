@@ -3,59 +3,37 @@ import { BrowserRouter as Router } from "react-router-dom";
 import Header from "./components/layout/Header";
 import Footer from "./components/layout/Footer";
 import AppRoutes from "./routes/AppRoutes";
-
-// This context would normally be implemented with actual authentication
-// Replace with real auth when backend is ready
-export const AuthContext = React.createContext({
-  isAuthenticated: false,
-  user: null,
-  login: () => {},
-  logout: () => {},
-  loading: false,
-});
+import { useAuth } from "./context/AuthContext"; // Import useAuth từ AuthContext riêng
 
 function App() {
-  // Mock auth state that would be replaced with real auth later
-  const [authState, setAuthState] = React.useState({
-    isAuthenticated: false,
-    user: null,
-    loading: false,
-  });
-
-  const login = (userData) => {
-    setAuthState({
-      isAuthenticated: true,
-      user: userData,
-      loading: false,
-    });
-  };
-
-  const logout = () => {
-    setAuthState({
-      isAuthenticated: false,
-      user: null,
-      loading: false,
-    });
-  };
+  const { user, logout } = useAuth(); // Lấy user và logout từ AuthContext
 
   return (
-    <AuthContext.Provider
-      value={{
-        ...authState,
-        login,
-        logout,
-      }}
-    >
-      <Router>
-        <div className="flex flex-col min-h-screen">
-          <Header />
-          <main className="flex-grow bg-gray-50">
-            <AppRoutes />
-          </main>
-          <Footer />
-        </div>
-      </Router>
-    </AuthContext.Provider>
+    <Router>
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-grow bg-gray-50">
+          {/* Hiển thị email người dùng nếu đã đăng nhập */}
+          {user ? (
+            <div className="p-4 text-center">
+              <p className="text-lg">
+                Welcome, <span className="font-bold">{user.email}</span>!
+              </p>
+              <button
+                onClick={logout}
+                className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <p className="p-4 text-center">Please log in to see your email.</p>
+          )}
+          <AppRoutes />
+        </main>
+        <Footer />
+      </div>
+    </Router>
   );
 }
 

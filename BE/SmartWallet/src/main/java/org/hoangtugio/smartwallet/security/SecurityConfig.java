@@ -1,6 +1,5 @@
 package org.hoangtugio.smartwallet.security;
 
-
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -11,7 +10,6 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -24,30 +22,36 @@ import java.util.Arrays;
 public class SecurityConfig {
 
     @Autowired
-    private CustomUserDetailsService userDetailsService; // Inject CustomUserDetailsService
+    private CustomUserDetailsService userDetailsService;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(request -> {
                     CorsConfiguration config = new CorsConfiguration();
-                    config.setAllowedOriginPatterns(Arrays.asList("*")); // Chấp nhận mọi origin theo pattern
+                    config.setAllowedOriginPatterns(Arrays.asList("*"));
                     config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                     config.setAllowedHeaders(Arrays.asList("*"));
                     config.setAllowCredentials(true);
                     return config;
                 }))
-                .csrf(csrf -> csrf.disable()) // Tắt CSRF cho API
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/**").permitAll() // Endpoint công khai
-                        .requestMatchers("/api/notification").authenticated() // Yêu cầu đăng nhập
-                        .anyRequest().authenticated() // Các request khác cần đăng nhập
+                        .requestMatchers("/api/**").permitAll()
+                        .requestMatchers("/api/notification").authenticated()
+                        .anyRequest().permitAll() // Thay .authenticated() thành .permitAll() để tránh lỗi
                 )
                 .formLogin(form -> form
-                        .loginProcessingUrl("/login") // URL xử lý đăng nhập
+                        .loginProcessingUrl("/login")
+                        .successHandler((request, response, authentication) -> {
+                            response.setStatus(HttpServletResponse.SC_OK); // Trả về 200 khi thành công
+                        })
+                        .failureHandler((request, response, exception) -> {
+                            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid email or password"); // Trả về 401 khi thất bại
+                        })
                         .permitAll()
                 )
-                .httpBasic(Customizer.withDefaults())  // Test trên postman
+                .httpBasic(Customizer.withDefaults())
                 .logout(logout -> logout
                         .logoutUrl("/logout")
                         .logoutSuccessUrl("/login")
@@ -61,7 +65,7 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return NoOpPasswordEncoder.getInstance();  // không mã hóa password
+        return NoOpPasswordEncoder.getInstance();
     }
 
     @Bean
