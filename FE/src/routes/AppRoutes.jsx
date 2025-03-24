@@ -1,12 +1,11 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
-//auth
-import LoginForm from "../components/auth/LoginForm";
-
 // Pages
 import Home from "../pages/Home";
+import Login from "../pages/Login";
 import SignUp from "../pages/SignUp";
+import AccountPage from "../pages/AccountPage";
 import Transactions from "../pages/Transactions";
 import Dashboard from "../pages/DashboardPage";
 
@@ -57,20 +56,14 @@ const AppRoutes = () => {
     <Routes>
       {/* Public routes */}
       <Route path="/" element={<Home />} />
+
+      <Route path="/login" element={<Login />} />
+      <Route path="/account" element={<AccountPage />} />
       <Route path="/signup" element={<SignUp />} /> {/* Thêm route cho SignUp */}
       <Route path="/transactions" element={<Transactions />} />
       <Route path="/dashboard" element={<Dashboard />} /> {/* Thêm route cho SignUp */}
 
       {/* Routes that need backend (using placeholders) */}
-      <Route
-        path="/transactions"
-        element={
-          <PlaceholderPage
-            title="Transactions"
-            description="This page will display the user's financial transactions, with filtering, sorting, and search capabilities."
-          />
-        }
-      />
       <Route
         path="/budgets"
         element={
@@ -98,18 +91,6 @@ const AppRoutes = () => {
           />
         }
       />
-      <Route
-        path="/account"
-        element={
-          <PlaceholderPage
-            title="Account Settings"
-            description="This page will allow users to manage their profile, preferences, and security settings."
-          />
-        }
-      />
-      <Route path="/login" element={<LoginForm />} />
-
-
       {/* Fallback for unknown routes */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

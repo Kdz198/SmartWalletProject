@@ -1,30 +1,62 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Button from "../common/Button";
+import { useAuth } from "../../context/AuthContext"; // Import useAuth từ AuthContext
+
+// Avatar mặc định dựa trên giới tính
+const maleAvatar = "https://avatar.iran.liara.run/public/boy"; // Avatar nam
+const femaleAvatar = "https://avatar.iran.liara.run/public/girl"; // Avatar nữ
 
 const Header = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { user, logout } = useAuth(); // Lấy user và logout từ AuthContext
+  const [isLoggedIn, setIsLoggedIn] = useState(!!user); // Kiểm tra trạng thái đăng nhập dựa trên user
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [accountData, setAccountData] = useState(null); // Lưu dữ liệu từ API /findbyid
   const navigate = useNavigate();
 
-  const user = {
-    name: "John Doe",
-    avatarUrl: "/api/placeholder/40/40",
-  };
+  const notificationCount = 3; // Giả định số thông báo, bạn có thể thay bằng API nếu cần
 
-  const notificationCount = 3;
+  // Lấy dữ liệu từ API /findbyid khi user thay đổi
+  useEffect(() => {
+    const fetchAccountData = async () => {
+      if (user && user.id) {
+        try {
+          const response = await fetch(
+            `http://localhost:8080/api/account/findbyid?id=${user.id}`,
+            {
+              method: "GET",
+              credentials: "include", // Đảm bảo gửi cookie/session nếu cần
+            }
+          );
+          if (!response.ok) {
+            throw new Error("Failed to fetch account data");
+          }
+          const data = await response.json();
+          setAccountData(data); // Lưu dữ liệu tài khoản
+        } catch (error) {
+          console.error("Error fetching account data:", error);
+        }
+      }
+    };
 
-  const toggleLogin = () => {
-    setIsLoggedIn(!isLoggedIn);
-  };
+    fetchAccountData();
+    setIsLoggedIn(!!user); // Cập nhật trạng thái đăng nhập
+  }, [user]);
 
-  const logout = () => {
+  const handleLogout = () => {
+    logout(); // Gọi hàm logout từ AuthContext
     setIsLoggedIn(false);
+    setAccountData(null); // Xóa dữ liệu tài khoản khi đăng xuất
+    navigate("/login"); // Chuyển hướng về trang login
   };
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
+
+  // Xác định avatar dựa trên giới tính
+  const avatarUrl =
+    accountData && accountData.gender ? maleAvatar : femaleAvatar;
 
   return (
     <header className="bg-white shadow-sm">
@@ -71,7 +103,7 @@ const Header = () => {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center space-x-4">
-            {isLoggedIn ? (
+            {isLoggedIn && accountData ? (
               <>
                 <Link
                   to="/notifications"
@@ -103,27 +135,24 @@ const Header = () => {
                 >
                   <img
                     className="h-8 w-8 rounded-full"
-                    src={user.avatarUrl}
-                    alt=""
+                    src={avatarUrl}
+                    alt="User avatar"
                   />
-                  <span>{user.name}</span>
+                  <span>{accountData.name}</span>
                 </button>
                 <Button
                   variant="outline"
                   size="small"
                   className="text-gray-700 border-gray-300 hover:bg-gray-100 hover:text-blue-600 transition-all duration-300 ease-in-out rounded-md"
-                  onClick={logout}
+                  onClick={handleLogout}
                 >
                   Logout
                 </Button>
               </>
             ) : (
               <>
-                {/* For demo purposes, we'll use the toggle button; 
-                    In real app, these would navigate to login/signup pages */}
                 <Link to="/login" className="text-gray-500 hover:text-gray-700">
-                  <Button onClick={toggleLogin}>Login</Button>
-                
+                  <Button>Login</Button>
                 </Link>
                 <Link to="/signup">
                   <Button
@@ -215,17 +244,21 @@ const Header = () => {
             )}
           </div>
           <div className="border-t border-gray-200 px-4 py-3">
-            {isLoggedIn ? (
+            {isLoggedIn && accountData ? (
               <>
                 <div className="flex items-center space-x-3 mb-3">
                   <img
                     className="h-10 w-10 rounded-full"
-                    src={user.avatarUrl}
-                    alt=""
+                    src={avatarUrl}
+                    alt="User avatar"
                   />
                   <div>
-                    <div className="font-medium text-gray-800">{user.name}</div>
-                    <div className="text-sm text-gray-500">user@example.com</div>
+                    <div className="font-medium text-gray-800">
+                      {accountData.name}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {accountData.email}
+                    </div>
                   </div>
                   <Link
                     to="/notifications"
@@ -259,7 +292,7 @@ const Header = () => {
                   Your Profile
                 </Link>
                 <button
-                  onClick={logout}
+                  onClick={handleLogout}
                   className="block w-full text-left px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-md transition-all duration-300 ease-in-out"
                 >
                   Sign out
@@ -267,13 +300,14 @@ const Header = () => {
               </>
             ) : (
               <div className="space-y-3">
-                <Button
-                  fullWidth
-                  onClick={toggleLogin}
-                  className="bg-blue-600 text-white hover:bg-blue-700 transition-all duration-300 ease-in-out rounded-md"
-                >
-                  Login
-                </Button>
+                <Link to="/login">
+                  <Button
+                    fullWidth
+                    className="bg-blue-600 text-white hover:bg-blue-700 transition-all duration-300 ease-in-out rounded-md"
+                  >
+                    Login
+                  </Button>
+                </Link>
                 <Link to="/signup">
                   <Button
                     variant="outline"
