@@ -11,6 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/deal")
+@CrossOrigin(origins = "*")
 public class DealController {
 
     @Autowired

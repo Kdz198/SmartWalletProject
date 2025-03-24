@@ -10,6 +10,8 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/budget")
+@CrossOrigin(origins = "*")
+
 public class BudgetController {
     @Autowired
     private BudgetService budgetService;

@@ -15,6 +15,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+
+import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
@@ -26,6 +29,14 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                .cors(cors -> cors.configurationSource(request -> {
+                    CorsConfiguration config = new CorsConfiguration();
+                    config.setAllowedOriginPatterns(Arrays.asList("*")); // Chấp nhận mọi origin theo pattern
+                    config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                    config.setAllowedHeaders(Arrays.asList("*"));
+                    config.setAllowCredentials(true);
+                    return config;
+                }))
                 .csrf(csrf -> csrf.disable()) // Tắt CSRF cho API
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/**").permitAll() // Endpoint công khai
