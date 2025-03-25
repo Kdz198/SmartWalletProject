@@ -633,7 +633,7 @@ const BudgetPage = () => {
 
         {/* Create Modal */}
         {isCreateModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="fixed inset-0 backdrop-blur bg-black bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md max-h-[70vh] overflow-y-auto transform transition-all duration-300 scale-100">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -743,7 +743,7 @@ const BudgetPage = () => {
 
         {/* Edit Modal */}
         {isEditModalOpen && editFormData && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="fixed inset-0 backdrop-blur bg-black bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md max-h-[70vh] overflow-y-auto transform transition-all duration-300 scale-100">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -853,7 +853,7 @@ const BudgetPage = () => {
 
         {/* Add Deal Modal */}
         {isAddDealModalOpen && selectedBudgetId && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="fixed inset-0 backdrop-blur bg-black bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-lg max-h-[70vh] overflow-y-auto transform transition-all duration-300 scale-100">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -916,7 +916,7 @@ const BudgetPage = () => {
 
         {/* Deals Modal */}
         {isDealsModalOpen && selectedBudgetId && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="fixed inset-0 backdrop-blur bg-black bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-lg max-h-[70vh] overflow-y-auto transform transition-all duration-300 scale-100">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -986,7 +986,7 @@ const BudgetPage = () => {
 
         {/* Delete Confirmation Modal */}
         {isDeleteModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="fixed inset-0 backdrop-blur bg-black bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-100">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -1023,7 +1023,7 @@ const BudgetPage = () => {
 
         {/* Remove Deal Confirmation Modal */}
         {isRemoveDealModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="fixed inset-0 backdrop-blur bg-black bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-100">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">

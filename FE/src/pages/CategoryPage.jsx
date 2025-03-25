@@ -494,7 +494,7 @@ const CategoryPage = () => {
 
         {/* Create Modal */}
         {isCreateModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="fixed inset-0 backdrop-blur bg-black bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md max-h-[70vh] overflow-y-auto transform transition-all duration-300 scale-100">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">
@@ -626,7 +626,7 @@ const CategoryPage = () => {
 
         {/* Deals Modal */}
         {isDealsModalOpen && selectedCategory && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="fixed inset-0 backdrop-blur bg-black bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-y-auto transform transition-all duration-300 scale-100">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">
