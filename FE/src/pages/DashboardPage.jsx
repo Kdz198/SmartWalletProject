@@ -493,19 +493,18 @@ const TrangTongQuan = () => {
       >
         <ul className="space-y-2">
           {[
-            "Thêm Giao Dịch",
-            "Thêm Ngân Sách",
-            "Xem Tất Cả Giao Dịch",
-            "Xem Tất Cả Ngân Sách",
-            "Quản Lý Danh Mục",
-            "Cài Đặt Tài Khoản",
+            { label: "Thêm Giao Dịch", href: "/transactions" },
+            { label: "Thêm Ngân Sách", href: "/budgets" },
+            { label: "Xem Tất Cả Giao Dịch", href: "/transactions" },
+            { label: "Xem Tất Cả Ngân Sách", href: "/budgets" },
+            { label: "Quản Lý Danh Mục", href: "/categories" },
           ].map((muc) => (
-            <li key={muc}>
+            <li key={muc.label}>
               <a
-                href="#"
+                href={muc.href}
                 className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700/80 hover:text-white rounded-lg transition-colors"
               >
-                {muc}
+                {muc.label}
               </a>
             </li>
           ))}
