@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaPlus, FaEllipsisH, FaTimes, FaTags } from "react-icons/fa";
+import { FaPlus, FaTimes, FaTags, FaEllipsisH } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 
 const CategoryPage = () => {
@@ -13,109 +13,90 @@ const CategoryPage = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDealsModalOpen, setIsDealsModalOpen] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState(null); // Thêm state để quản lý menu nào đang mở
   const [createFormData, setCreateFormData] = useState({
     name: "",
     img: "default.img",
   });
   const [editFormData, setEditFormData] = useState(null);
   const [formErrors, setFormErrors] = useState({});
-  const [openDropdown, setOpenDropdown] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState(null);
-  const [showToast, setShowToast] = useState(false);
+  const [toast, setToast] = useState({ show: false, message: "", type: "" });
   const accountId = user?.id;
 
-  // Fetch categories and deals
+  const showToast = (message, type) => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: "", type: "" }), 3000);
+  };
+  const toggleMenu = (categoryId) => {
+    setOpenMenuId(openMenuId === categoryId ? null : categoryId); // Đóng/mở menu
+  };
+
+  const getToastColor = (type) => {
+    switch (type) {
+      case "create":
+        return "green-500"; // Xanh lục cho tạo mới
+      case "update":
+        return "blue-500"; // Xanh dương cho cập nhật
+      case "delete":
+        return "red-500"; // Xanh lục cho xóa
+      case "error":
+        return "red-500"; // Đỏ cho lỗi
+      default:
+        return "gray-500";
+    }
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch all categories
-      console.log("API Request: GET /api/category");
       const allCategoriesResponse = await fetch(
         "http://localhost:8080/api/category",
         {
           credentials: "include",
         }
       );
-      if (!allCategoriesResponse.ok) {
-        const errorData = await allCategoriesResponse.json();
-        console.error("API Response Error:", errorData);
-        throw new Error(
-          errorData.message || "Không thể lấy danh sách danh mục"
-        );
-      }
+      if (!allCategoriesResponse.ok)
+        throw new Error("Không thể lấy danh sách danh mục");
       const allCategories = await allCategoriesResponse.json();
-      console.log("API Response Success: Categories fetched", allCategories);
-
-      // Đảo ngược thứ tự danh sách để dữ liệu mới nhất (cuối mảng) lên đầu
       const reversedCategories = allCategories.slice().reverse();
-
-      const systemCats = reversedCategories.filter((cat) => !cat.account);
-      const userCats = reversedCategories.filter(
-        (cat) => cat.account && cat.account.id === accountId
+      setSystemCategories(reversedCategories.filter((cat) => !cat.account));
+      setUserCategories(
+        reversedCategories.filter(
+          (cat) => cat.account && cat.account.id === accountId
+        )
       );
 
-      setSystemCategories(systemCats);
-      setUserCategories(userCats);
-
-      // Fetch deals if logged in
       if (accountId) {
-        console.log(`API Request: GET /api/deal/findbyaccount?id=${accountId}`);
         const dealResponse = await fetch(
           `http://localhost:8080/api/deal/findbyaccount?id=${accountId}`,
           {
             credentials: "include",
           }
         );
-        if (!dealResponse.ok) {
-          const errorData = await dealResponse.json();
-          console.error("API Response Error:", errorData);
-          throw new Error(
-            errorData.message || "Không thể lấy danh sách giao dịch"
-          );
-        }
-        const dealData = await dealResponse.json();
-        console.log("API Response Success: Deals fetched", dealData);
-        setDeals(dealData); // Deals có cần đảo ngược không tùy thuộc vào yêu cầu
+        if (!dealResponse.ok)
+          throw new Error("Không thể lấy danh sách giao dịch");
+        setDeals(await dealResponse.json());
       } else {
         setDeals([]);
       }
-
       setLoading(false);
     } catch (err) {
-      console.error("Lỗi khi tải dữ liệu:", err.message);
       setError(err.message);
       setLoading(false);
+      showToast(err.message, "error");
     }
   };
 
-  // Load initial data when user or accountId changes
   useEffect(() => {
     fetchData();
   }, [user, accountId]);
 
-  // Các hàm khác giữ nguyên, không thay đổi
-  const toggleDropdown = (id) => {
-    setOpenDropdown(openDropdown === id ? null : id);
-  };
-
-  const handleCreateInputChange = (e) => {
-    const { name, value } = e.target;
-    setCreateFormData({ ...createFormData, [name]: value });
-    setFormErrors({ ...formErrors, [name]: "" });
-  };
-
-  const handleEditInputChange = (e) => {
-    const { name, value } = e.target;
-    setEditFormData({ ...editFormData, [name]: value });
-    setFormErrors({ ...formErrors, [name]: "" });
-  };
-
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
     if (!accountId) {
-      setFormErrors({ general: "Vui lòng đăng nhập để tạo danh mục" });
-      console.error("Lỗi: Người dùng chưa đăng nhập");
+      showToast("Vui lòng đăng nhập để tạo danh mục", "error");
       return;
     }
     try {
@@ -124,8 +105,6 @@ const CategoryPage = () => {
         img: createFormData.img,
         account: { id: accountId },
       };
-      console.log("API Request: POST /api/category/create", payload);
-
       const response = await fetch(
         "http://localhost:8080/api/category/create",
         {
@@ -135,43 +114,24 @@ const CategoryPage = () => {
           credentials: "include",
         }
       );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("API Response Error:", errorData);
-        throw new Error(errorData.message || "Không thể tạo danh mục");
-      }
-
-      const responseData = await response.json();
-      console.log("API Response Success: Category created", responseData);
+      if (!response.ok)
+        throw new Error(
+          (await response.json()).message || "Không thể tạo danh mục"
+        );
       await fetchData();
       setIsCreateModalOpen(false);
-      setCreateFormData({
-        name: "",
-        img: "default.img",
-      });
+      setCreateFormData({ name: "", img: "default.img" });
       setFormErrors({});
+      showToast("Tạo danh mục thành công!", "create");
     } catch (err) {
-      console.error("Lỗi khi tạo danh mục:", err.message);
-      if (err.message.includes("errors")) {
-        const errorMap = {};
-        err.errors?.forEach((error) => {
-          errorMap[error.field] = error.defaultMessage;
-        });
-        setFormErrors(errorMap);
-      } else {
-        setFormErrors({
-          general: err.message || "Có lỗi xảy ra khi tạo danh mục",
-        });
-      }
+      showToast(err.message, "error");
     }
   };
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!accountId || !editFormData?.id) {
-      setFormErrors({ general: "Dữ liệu không hợp lệ để cập nhật danh mục" });
-      console.error("Lỗi: Dữ liệu không hợp lệ");
+      showToast("Dữ liệu không hợp lệ để cập nhật danh mục", "error");
       return;
     }
     try {
@@ -181,8 +141,6 @@ const CategoryPage = () => {
         img: editFormData.img,
         account: { id: accountId },
       };
-      console.log("API Request: POST /api/category/update", payload);
-
       const response = await fetch(
         "http://localhost:8080/api/category/update",
         {
@@ -192,55 +150,41 @@ const CategoryPage = () => {
           credentials: "include",
         }
       );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("API Response Error:", errorData);
-        throw new Error(errorData.message || "Không thể cập nhật danh mục");
-      }
-
-      const responseData = await response.json();
-      console.log("API Response Success: Category updated", responseData);
+      if (!response.ok)
+        throw new Error(
+          (await response.json()).message || "Không thể cập nhật danh mục"
+        );
       await fetchData();
       setIsEditModalOpen(false);
       setEditFormData(null);
       setFormErrors({});
-      setOpenDropdown(null);
+      showToast("Cập nhật danh mục thành công!", "update");
     } catch (err) {
-      console.error("Lỗi khi cập nhật danh mục:", err.message);
-      if (err.message.includes("errors")) {
-        const errorMap = {};
-        err.errors?.forEach((error) => {
-          errorMap[error.field] = error.defaultMessage;
-        });
-        setFormErrors(errorMap);
-      } else {
-        setFormErrors({
-          general: err.message || "Có lỗi xảy ra khi cập nhật danh mục",
-        });
-      }
+      showToast(err.message, "error");
     }
   };
 
   const handleDelete = (categoryId) => {
     const category = userCategories.find((cat) => cat.id === categoryId);
     if (!category || !category.account) {
-      console.warn("Không thể xóa danh mục hệ thống");
-      alert("Không thể xóa danh mục hệ thống!");
+      showToast("Không thể xóa danh mục hệ thống!", "error");
       return;
     }
-
+    const hasDeals = deals.some((deal) => deal.category?.id === categoryId);
+    if (hasDeals) {
+      showToast(
+        "Không thể xóa danh mục đang có giao dịch. Vui lòng xóa tất cả giao dịch liên quan trước!",
+        "error"
+      );
+      return;
+    }
     setCategoryToDelete(categoryId);
     setIsDeleteModalOpen(true);
   };
 
   const confirmDelete = async () => {
     if (!categoryToDelete) return;
-
     try {
-      console.log(
-        `API Request: DELETE /api/category/delete?id=${categoryToDelete}`
-      );
       const response = await fetch(
         `http://localhost:8080/api/category/delete?id=${categoryToDelete}`,
         {
@@ -248,23 +192,16 @@ const CategoryPage = () => {
           credentials: "include",
         }
       );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("API Response Error:", errorData);
-        throw new Error(errorData.message || "Không thể xóa danh mục");
-      }
-
-      console.log("API Response Success: Category deleted", categoryToDelete);
+      if (!response.ok)
+        throw new Error(
+          (await response.json()).message || "Không thể xóa danh mục"
+        );
       await fetchData();
-      setOpenDropdown(null);
       setIsDeleteModalOpen(false);
       setCategoryToDelete(null);
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
+      showToast("Xóa danh mục thành công!", "delete");
     } catch (err) {
-      console.error("Lỗi khi xóa danh mục:", err.message);
-      alert("Có lỗi xảy ra khi xóa danh mục: " + err.message);
+      showToast(err.message, "error");
     }
   };
 
@@ -275,7 +212,6 @@ const CategoryPage = () => {
       img: category.img,
     });
     setIsEditModalOpen(true);
-    setOpenDropdown(null);
   };
 
   const handleCategoryClick = (category) => {
@@ -290,9 +226,17 @@ const CategoryPage = () => {
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-100 to-blue-200 flex items-center justify-center">
-        <p className="text-gray-700 text-xl font-semibold">
-          Vui lòng đăng nhập để xem danh mục.
-        </p>
+        {toast.show && (
+          <div className="fixed top-4 right-4 z-50">
+            <div
+              className={`bg-${getToastColor(
+                toast.type
+              )} text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-fade-in`}
+            >
+              <span>Vui lòng đăng nhập để xem danh mục</span>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -300,14 +244,12 @@ const CategoryPage = () => {
   if (loading)
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-100 to-blue-200 flex items-center justify-center">
-        <p className="text-gray-700 text-xl font-semibold">Đang tải...</p>
+        Đang tải...
       </div>
     );
   if (error)
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-100 to-blue-200 flex items-center justify-center">
-        <p className="text-red-600 text-xl font-semibold">Lỗi: {error}</p>
-      </div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-100 to-blue-200 flex items-center justify-center"></div>
     );
 
   return (
@@ -326,6 +268,19 @@ const CategoryPage = () => {
             <span className="font-semibold">Tạo danh mục mới</span>
           </button>
         </div>
+
+        {toast.show && (
+          <div className="fixed top-4 right-4 z-50">
+            <div
+              className={`bg-${getToastColor(
+                toast.type
+              )} text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-fade-in`}
+            >
+              <span>{toast.message}</span>
+            </div>
+          </div>
+        )}
+
         {isDeleteModalOpen && (
           <div className="fixed inset-0 backdrop-blur-xl bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-100">
@@ -356,13 +311,6 @@ const CategoryPage = () => {
           </div>
         )}
 
-        {showToast && (
-          <div className="fixed bottom-4 right-4 z-50">
-            <div className="bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-fade-in">
-              <span>Đã xóa danh mục thành công!</span>
-            </div>
-          </div>
-        )}
         <div className="mb-12">
           <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center space-x-2">
             <FaTags className="text-indigo-500" />
@@ -392,7 +340,6 @@ const CategoryPage = () => {
             ))}
           </div>
         </div>
-
         <div>
           <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center space-x-2">
             <FaTags className="text-purple-500" />
@@ -426,47 +373,31 @@ const CategoryPage = () => {
                         <p className="text-sm text-gray-500">Người dùng</p>
                       </div>
                     </div>
-                    <div className="flex flex-col gap-2">
+                    {/* Nút ba chấm và menu dropdown */}
+                    <div className="relative">
                       <button
-                        onClick={() => handleEdit(category)}
-                        className="text-blue-500 hover:text-blue-700 p-1 rounded-full hover:bg-blue-100 transition-all duration-200"
-                        title="Sửa danh mục"
+                        onClick={() => toggleMenu(category.id)}
+                        className="text-gray-600 hover:text-gray-800 p-1 rounded-full hover:bg-gray-100 transition-all duration-200"
+                        title="Tùy chọn"
                       >
-                        <svg
-                          className="w-[25px] h-[25px]"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="3"
-                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                          />
-                        </svg>
+                        <FaEllipsisH size={20} />
                       </button>
-                      <button
-                        onClick={() => handleDelete(category.id)}
-                        className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-100 transition-all duration-200"
-                        title="Xóa danh mục"
-                      >
-                        <svg
-                          className="w-[25px] h-[25px]"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="3"
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4M9 7h6m-5 4v6m4-6v6"
-                          />
-                        </svg>
-                      </button>
+                      {openMenuId === category.id && (
+                        <div className="absolute right-0 mt-2 w-32 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                          <button
+                            onClick={() => handleEdit(category)}
+                            className="block w-full text-left px-4 py-2 text-blue-600 hover:bg-blue-50 hover:text-blue-800 transition-all duration-200"
+                          >
+                            Sửa
+                          </button>
+                          <button
+                            onClick={() => handleDelete(category.id)}
+                            className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 hover:text-red-800 transition-all duration-200"
+                          >
+                            Xóa
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -498,7 +429,12 @@ const CategoryPage = () => {
                     type="text"
                     name="name"
                     value={createFormData.name}
-                    onChange={handleCreateInputChange}
+                    onChange={(e) =>
+                      setCreateFormData({
+                        ...createFormData,
+                        name: e.target.value,
+                      })
+                    }
                     className="mt-2 block w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-gray-50"
                     required
                   />
@@ -516,7 +452,12 @@ const CategoryPage = () => {
                     type="text"
                     name="img"
                     value={createFormData.img}
-                    onChange={handleCreateInputChange}
+                    onChange={(e) =>
+                      setCreateFormData({
+                        ...createFormData,
+                        img: e.target.value,
+                      })
+                    }
                     className="mt-2 block w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-gray-50"
                     required
                   />
@@ -526,9 +467,6 @@ const CategoryPage = () => {
                     </p>
                   )}
                 </div>
-                {formErrors.general && (
-                  <p className="text-red-500 text-sm">{formErrors.general}</p>
-                )}
                 <button
                   type="submit"
                   className="w-full bg-gradient-to-r from-indigo-600 to-blue-500 text-white py-3 rounded-lg hover:from-indigo-700 hover:to-blue-600 transition-all duration-300 font-semibold shadow-md"
@@ -541,7 +479,7 @@ const CategoryPage = () => {
         )}
 
         {isEditModalOpen && editFormData && (
-          <div className="fixed inset-0  backdrop-blur-xl bg-opacity-60 flex items-center justify-center z-50">
+          <div className="fixed inset-0 backdrop-blur-xl bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md max-h-[70vh] overflow-y-auto transform transition-all duration-300 scale-100">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">
@@ -563,7 +501,9 @@ const CategoryPage = () => {
                     type="text"
                     name="name"
                     value={editFormData.name}
-                    onChange={handleEditInputChange}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, name: e.target.value })
+                    }
                     className="mt-2 block w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-gray-50"
                     required
                   />
@@ -581,7 +521,9 @@ const CategoryPage = () => {
                     type="text"
                     name="img"
                     value={editFormData.img}
-                    onChange={handleEditInputChange}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, img: e.target.value })
+                    }
                     className="mt-2 block w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-gray-50"
                     required
                   />
@@ -591,9 +533,6 @@ const CategoryPage = () => {
                     </p>
                   )}
                 </div>
-                {formErrors.general && (
-                  <p className="text-red-500 text-sm">{formErrors.general}</p>
-                )}
                 <button
                   type="submit"
                   className="w-full bg-gradient-to-r from-indigo-600 to-blue-500 text-white py-3 rounded-lg hover:from-indigo-700 hover:to-blue-600 transition-all duration-300 font-semibold shadow-md"

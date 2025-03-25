@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 import {
   FaPlus,
+  FaEllipsisH,
   FaTimes,
-  FaTrash,
   FaPiggyBank,
-  FaCheck,
-  FaEdit, // Thêm icon FaEdit cho nút Sửa
+  FaTrash,
 } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 import { toast, ToastContainer } from "react-toastify";
@@ -23,10 +22,9 @@ const BudgetPage = () => {
   const [isAddDealModalOpen, setIsAddDealModalOpen] = useState(false);
   const [isDealsModalOpen, setIsDealsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isRemoveDealModalOpen, setIsRemoveDealModalOpen] = useState(false);
   const [selectedBudgetId, setSelectedBudgetId] = useState(null);
-  const [dealToRemove, setDealToRemove] = useState(null);
   const [budgetToDelete, setBudgetToDelete] = useState(null);
+  const [openDropdown, setOpenDropdown] = useState(null);
   const [selectedType, setSelectedType] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
   const [createFormData, setCreateFormData] = useState({
@@ -40,69 +38,55 @@ const BudgetPage = () => {
 
   const accountId = user?.id;
 
-  // Giữ nguyên các hàm khác như fetchBudgetsAndDeals, applyFilter, handleTypeFilterChange, v.v.
   const fetchBudgetsAndDeals = async () => {
     if (!accountId) return;
     setLoading(true);
     try {
-      console.log(`API Request: GET /api/budget/findbyaccount?id=${accountId}`);
       const budgetResponse = await fetch(
         `http://localhost:8080/api/budget/findbyaccount?id=${accountId}`,
         { credentials: "include" }
       );
-      if (!budgetResponse.ok) {
-        const errorData = await budgetResponse.json();
-        console.error("API Response Error:", errorData);
-        throw new Error(errorData.message || "Không thể lấy dữ liệu ngân sách");
-      }
+      if (!budgetResponse.ok)
+        throw new Error("Không thể lấy dữ liệu ngân sách");
       const budgetData = await budgetResponse.json();
-      // Đảo ngược budgetData để ngân sách mới nhất lên đầu
-      const reversedBudgetData = budgetData.slice().reverse();
-      console.log("API Response Success: Budgets fetched", reversedBudgetData);
 
-      console.log(`API Request: GET /api/deal/findbyaccount?id=${accountId}`);
       const dealResponse = await fetch(
         `http://localhost:8080/api/deal/findbyaccount?id=${accountId}`,
         { credentials: "include" }
       );
-      if (!dealResponse.ok) {
-        const errorData = await dealResponse.json();
-        console.error("API Response Error:", errorData);
-        throw new Error(errorData.message || "Không thể lấy dữ liệu giao dịch");
-      }
+      if (!dealResponse.ok) throw new Error("Không thể lấy dữ liệu giao dịch");
       const dealData = await dealResponse.json();
-      // Đảo ngược dealData để giao dịch mới nhất lên đầu
-      const reversedDealData = dealData.slice().reverse();
-      console.log("API Response Success: Deals fetched", reversedDealData);
 
-      const formattedBudgets = reversedBudgetData.map((budget) => {
-        const relatedDeals = reversedDealData.filter(
-          (deal) => deal.budget?.id === budget.id
-        );
-        const spent = relatedDeals.reduce((sum, deal) => sum + deal.total, 0);
-        return {
-          id: budget.id,
-          name: budget.name,
-          type: budget.type,
-          total: budget.total,
-          month: budget.month,
-          spent: spent,
-        };
-      });
+      const formattedBudgets = budgetData
+        .map((budget) => {
+          const relatedDeals = dealData.filter(
+            (deal) => deal.budget?.id === budget.id
+          );
+          const spent = relatedDeals.reduce((sum, deal) => sum + deal.total, 0);
+          return {
+            id: budget.id,
+            name: budget.name,
+            type: budget.type,
+            total: budget.total,
+            month: budget.month,
+            spent: spent,
+          };
+        })
+        .slice()
+        .reverse(); // Thêm slice().reverse() để hiển thị từ mới nhất đến cũ nhất
 
       setBudgets(formattedBudgets);
-      setDeals(reversedDealData);
+      setDeals(dealData);
       applyFilter(formattedBudgets, selectedType, selectedMonth);
       setLoading(false);
     } catch (err) {
-      console.error("Lỗi khi tải dữ liệu:", err.message);
       setError(err.message);
       setLoading(false);
     }
   };
 
   const applyFilter = (budgetList, typeFilter, monthFilter) => {
-    let filtered = budgetList;
+    let filtered = [...budgetList];
     if (typeFilter !== "") {
       filtered = filtered.filter(
         (budget) => budget.type === (typeFilter === "true")
@@ -114,6 +98,16 @@ const BudgetPage = () => {
       );
     }
     setFilteredBudgets(filtered);
+  };
+
+  useEffect(() => {
+    if (user && accountId) {
+      fetchBudgetsAndDeals();
+    }
+  }, [user, accountId]);
+
+  const toggleDropdown = (id) => {
+    setOpenDropdown(openDropdown === id ? null : id);
   };
 
   const handleTypeFilterChange = (e) => {
@@ -128,41 +122,34 @@ const BudgetPage = () => {
     applyFilter(budgets, selectedType, newMonth);
   };
 
-  useEffect(() => {
-    if (user && accountId) {
-      fetchBudgetsAndDeals();
-    }
-  }, [user, accountId]);
+  const validateForm = (data) => {
+    const errors = {};
+    if (!data.name) errors.name = "Tên ngân sách không được để trống";
+    if (!data.total || data.total <= 0)
+      errors.total = "Số tiền phải là số dương";
+    if (!data.month || data.month < 1 || data.month > 12)
+      errors.month = "Tháng phải từ 1 đến 12";
+    return errors;
+  };
 
   const handleCreateInputChange = (e) => {
     const { name, value } = e.target;
-    setCreateFormData({ ...createFormData, [name]: value });
-    setFormErrors({ ...formErrors, [name]: "" });
+    const updatedFormData = { ...createFormData, [name]: value };
+    setCreateFormData(updatedFormData);
+    setFormErrors(validateForm(updatedFormData));
   };
 
   const handleEditInputChange = (e) => {
     const { name, value } = e.target;
-    setEditFormData({ ...editFormData, [name]: value });
-    setFormErrors({ ...formErrors, [name]: "" });
-  };
-
-  const validateForm = (data) => {
-    const errors = {};
-    if (!data.name) errors.name = "Tên ngân sách không được để trống";
-    if (data.type === null || data.type === undefined || data.type === "")
-      errors.type = "Loại ngân sách không được để trống";
-    if (!data.total || parseInt(data.total) <= 0)
-      errors.total = "Số tiền phải là số dương";
-    if (!data.month || parseInt(data.month) < 1 || parseInt(data.month) > 12)
-      errors.month = "Tháng phải từ 1 đến 12";
-    return errors;
+    const updatedFormData = { ...editFormData, [name]: value };
+    setEditFormData(updatedFormData);
+    setFormErrors(validateForm(updatedFormData));
   };
 
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
     if (!accountId) {
       setFormErrors({ general: "Vui lòng đăng nhập để tạo ngân sách" });
-      console.error("Lỗi: Người dùng chưa đăng nhập");
       return;
     }
 
@@ -180,7 +167,6 @@ const BudgetPage = () => {
         month: parseInt(createFormData.month, 10),
         account: { id: accountId },
       };
-      console.log("API Request: POST /api/budget/create", payload);
 
       const response = await fetch("http://localhost:8080/api/budget/create", {
         method: "POST",
@@ -191,19 +177,9 @@ const BudgetPage = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("API Response Error:", errorData);
-        if (errorData.errors) {
-          const errorMap = {};
-          errorData.errors.forEach((error) => {
-            errorMap[error.field] = error.defaultMessage;
-          });
-          throw { errors: errorMap };
-        }
         throw new Error(errorData.message || "Có lỗi xảy ra khi tạo ngân sách");
       }
 
-      const responseData = await response.json();
-      console.log("API Response Success: Budget created", responseData);
       await fetchBudgetsAndDeals();
       setIsCreateModalOpen(false);
       setCreateFormData({
@@ -215,12 +191,8 @@ const BudgetPage = () => {
       setFormErrors({});
       toast.success("Ngân sách đã được tạo thành công!");
     } catch (err) {
-      if (err.errors) {
-        setFormErrors(err.errors);
-      } else {
-        console.error("Lỗi khi tạo ngân sách:", err.message);
-        setFormErrors({ general: err.message });
-      }
+      console.error("Lỗi khi tạo ngân sách:", err.message);
+      setFormErrors({ general: err.message });
     }
   };
 
@@ -228,7 +200,6 @@ const BudgetPage = () => {
     e.preventDefault();
     if (!accountId || !editFormData.id) {
       setFormErrors({ general: "Dữ liệu không hợp lệ để cập nhật ngân sách" });
-      console.error("Lỗi: Dữ liệu không hợp lệ");
       return;
     }
 
@@ -247,7 +218,6 @@ const BudgetPage = () => {
         month: parseInt(editFormData.month, 10),
         account: { id: accountId },
       };
-      console.log("API Request: POST /api/budget/update", payload);
 
       const response = await fetch("http://localhost:8080/api/budget/update", {
         method: "POST",
@@ -258,41 +228,24 @@ const BudgetPage = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("API Response Error:", errorData);
-        if (errorData.errors) {
-          const errorMap = {};
-          errorData.errors.forEach((error) => {
-            errorMap[error.field] = error.defaultMessage;
-          });
-          throw { errors: errorMap };
-        }
         throw new Error(
           errorData.message || "Có lỗi xảy ra khi cập nhật ngân sách"
         );
       }
 
-      const responseData = await response.json();
-      console.log("API Response Success: Budget updated", responseData);
       await fetchBudgetsAndDeals();
       setIsEditModalOpen(false);
       setEditFormData(null);
       setFormErrors({});
       toast.success("Ngân sách đã được cập nhật thành công!");
     } catch (err) {
-      if (err.errors) {
-        setFormErrors(err.errors);
-      } else {
-        console.error("Lỗi khi cập nhật ngân sách:", err.message);
-        setFormErrors({ general: err.message });
-      }
+      console.error("Lỗi khi cập nhật ngân sách:", err.message);
+      setFormErrors({ general: err.message });
     }
   };
 
   const handleDelete = async () => {
     try {
-      console.log(
-        `API Request: DELETE /api/budget/delete?id=${budgetToDelete}`
-      );
       const response = await fetch(
         `http://localhost:8080/api/budget/delete?id=${budgetToDelete}`,
         {
@@ -302,11 +255,10 @@ const BudgetPage = () => {
       );
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("API Response Error:", errorData);
         throw new Error(errorData.message || "Không thể xóa ngân sách");
       }
-      console.log("API Response Success: Budget deleted", budgetToDelete);
       await fetchBudgetsAndDeals();
+      setOpenDropdown(null);
       setIsDeleteModalOpen(false);
       toast.success("Ngân sách đã được xóa thành công!");
     } catch (err) {
@@ -318,6 +270,7 @@ const BudgetPage = () => {
   const handleConfirmDelete = (budgetId) => {
     setBudgetToDelete(budgetId);
     setIsDeleteModalOpen(true);
+    setOpenDropdown(null);
   };
 
   const handleEdit = (budget) => {
@@ -329,11 +282,13 @@ const BudgetPage = () => {
       month: budget.month.toString(),
     });
     setIsEditModalOpen(true);
+    setOpenDropdown(null);
   };
 
   const handleOpenAddDealModal = (budgetId) => {
     setSelectedBudgetId(budgetId);
     setIsAddDealModalOpen(true);
+    setOpenDropdown(null);
   };
 
   const handleOpenDealsModal = (budgetId) => {
@@ -357,10 +312,6 @@ const BudgetPage = () => {
         account: { id: accountId },
         budget: { id: budgetId },
       };
-      console.log(
-        "API Request: POST /api/deal/update (Add Deal to Budget)",
-        payload
-      );
 
       const response = await fetch("http://localhost:8080/api/deal/update", {
         method: "POST",
@@ -371,26 +322,21 @@ const BudgetPage = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("API Response Error:", errorData);
-        throw new Error(
-          errorData.message || "Không thể thêm giao dịch vào ngân sách"
-        );
+        throw new Error(errorData.message || "Không thể cập nhật giao dịch");
       }
 
-      const responseData = await response.json();
-      console.log("API Response Success: Deal added to budget", responseData);
       await fetchBudgetsAndDeals();
       setIsAddDealModalOpen(false);
-      toast.success("Giao dịch đã được thêm vào ngân sách thành công!");
+      toast.success("Giao dịch đã được thêm vào ngân sách!");
     } catch (err) {
-      console.error("Lỗi khi thêm giao dịch vào ngân sách:", err.message);
-      toast.error("Có lỗi xảy ra khi thêm giao dịch: " + err.message);
+      console.error("Lỗi khi thêm deal vào ngân sách:", err.message);
+      toast.error("Có lỗi xảy ra khi thêm deal: " + err.message);
     }
   };
 
-  const handleRemoveDealFromBudget = async () => {
+  const handleRemoveDealFromBudget = async (dealId) => {
     try {
-      const deal = deals.find((d) => d.id === dealToRemove);
+      const deal = deals.find((d) => d.id === dealId);
       if (!deal) throw new Error("Không tìm thấy giao dịch");
 
       const payload = {
@@ -404,10 +350,6 @@ const BudgetPage = () => {
         account: { id: accountId },
         budget: null,
       };
-      console.log(
-        "API Request: POST /api/deal/update (Remove Deal from Budget)",
-        payload
-      );
 
       const response = await fetch("http://localhost:8080/api/deal/update", {
         method: "POST",
@@ -418,29 +360,15 @@ const BudgetPage = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("API Response Error:", errorData);
-        throw new Error(
-          errorData.message || "Không thể gỡ giao dịch khỏi ngân sách"
-        );
+        throw new Error(errorData.message || "Không thể cập nhật giao dịch");
       }
 
-      const responseData = await response.json();
-      console.log(
-        "API Response Success: Deal removed from budget",
-        responseData
-      );
       await fetchBudgetsAndDeals();
-      setIsRemoveDealModalOpen(false);
-      toast.success("Giao dịch đã được gỡ khỏi ngân sách thành công!");
+      toast.success("Giao dịch đã được gỡ khỏi ngân sách!");
     } catch (err) {
-      console.error("Lỗi khi gỡ giao dịch khỏi ngân sách:", err.message);
-      toast.error("Có lỗi xảy ra khi gỡ giao dịch: " + err.message);
+      console.error("Lỗi khi gỡ deal khỏi ngân sách:", err.message);
+      toast.error("Có lỗi xảy ra khi gỡ deal: " + err.message);
     }
-  };
-
-  const handleConfirmRemoveDeal = (dealId) => {
-    setDealToRemove(dealId);
-    setIsRemoveDealModalOpen(true);
   };
 
   if (!user) {
@@ -477,29 +405,29 @@ const BudgetPage = () => {
             <FaPiggyBank className="text-blue-600" />
           </h1>
           <div className="flex items-center gap-6">
-            <div className="flex items-center gap-4 bg-white p-4 rounded-xl shadow-lg border border-gray-100">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-4 bg-white p-4 rounded-xl shadow-lg border border-gray-100">
+              <div className="flex items-center gap-2 min-w-[200px]">
                 <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
                   Loại:
                 </label>
                 <select
                   value={selectedType}
                   onChange={handleTypeFilterChange}
-                  className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
                 >
                   <option value="">Tất cả</option>
                   <option value="false">Thu nhập</option>
                   <option value="true">Chi tiêu</option>
                 </select>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-[200px]">
                 <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
                   Tháng:
                 </label>
                 <select
                   value={selectedMonth}
                   onChange={handleMonthFilterChange}
-                  className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-200"
                 >
                   <option value="">Tất cả</option>
                   {[...Array(12)].map((_, i) => (
@@ -522,10 +450,9 @@ const BudgetPage = () => {
             </div>
             <button
               onClick={() => setIsCreateModalOpen(true)}
-              className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-500 text-white px-5 py-2.5 rounded-full hover:from-blue-700 hover:to-indigo-600 transition-all duration-300 shadow-lg transform hover:scale-105"
+              className="bg-gradient-to-r from-blue-600 to-indigo-500 text-white p-3 rounded-full hover:from-blue-700 hover:to-indigo-600 transition-all duration-300 shadow-lg transform hover:scale-105"
             >
-              <FaPlus size={16} />{" "}
-              <span className="font-medium">Thêm ngân sách</span>
+              <FaPlus size={16} />
             </button>
           </div>
         </div>
@@ -539,11 +466,10 @@ const BudgetPage = () => {
             filteredBudgets.map((budget) => {
               const spentPercentage =
                 budget.total > 0 ? (budget.spent / budget.total) * 100 : 0;
-              const availableDeals = deals.filter((deal) => !deal.budget);
               return (
                 <div
                   key={budget.id}
-                  className="bg-white p-5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-between border border-gray-100 transform hover:scale-105 cursor-pointer"
+                  className="bg-white p-5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-between border border-gray-100 transform hover:scale-105 hover:z-10 relative"
                   onClick={() => handleOpenDealsModal(budget.id)}
                 >
                   <div className="flex items-center gap-4 w-full">
@@ -591,7 +517,7 @@ const BudgetPage = () => {
                     </div>
                   </div>
                   <div
-                    className="flex items-center gap-4" // Thay gap-6 thành gap-4 để cách đều
+                    className="flex items-center gap-6"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <p
@@ -601,31 +527,41 @@ const BudgetPage = () => {
                     >
                       {budget.total.toLocaleString("vi-VN")} VNĐ
                     </p>
-                    <div className="flex gap-3">
-                      {" "}
-                      {/* Thêm div flex với gap-3 để chứa 2 nút */}
+                    <div className="relative">
                       <button
-                        onClick={() => handleEdit(budget)}
-                        className="text-blue-500 hover:text-blue-700 p-2 rounded-full hover:bg-blue-100 transition-all duration-200"
-                        title="Sửa ngân sách" // Thêm title để hiện tooltip
+                        onClick={() => toggleDropdown(budget.id)}
+                        className="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100 transition-all duration-200 z-20"
                       >
-                        <FaEdit size={25} />
+                        <FaEllipsisH size={16} />
                       </button>
-                      <button
-                        onClick={() => handleConfirmDelete(budget.id)}
-                        className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-100 transition-all duration-200"
-                        title="Xóa ngân sách" // Thêm title để hiện tooltip
-                      >
-                        <FaTrash size={22} />
-                      </button>
-                      {availableDeals.length > 0 && (
-                        <button
-                          onClick={() => handleOpenAddDealModal(budget.id)}
-                          className="text-green-500 hover:text-green-700 p-2 rounded-full hover:bg-green-100 transition-all duration-200"
-                          title="Thêm giao dịch" // Thêm title để hiện tooltip
-                        >
-                          <FaPlus size={16} />
-                        </button>
+                      {openDropdown === budget.id && (
+                        <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-xl z-50 border border-gray-100">
+                          <ul className="py-1 text-sm text-gray-700">
+                            <li
+                              onClick={() => handleEdit(budget)}
+                              className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+                            >
+                              Sửa ngân sách
+                            </li>
+                            <li
+                              onClick={() => handleConfirmDelete(budget.id)}
+                              className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150 text-red-600"
+                            >
+                              Xóa
+                            </li>
+                            {deals.filter((deal) => !deal.budget).length >
+                              0 && (
+                              <li
+                                onClick={() =>
+                                  handleOpenAddDealModal(budget.id)
+                                }
+                                className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+                              >
+                                Thêm giao dịch
+                              </li>
+                            )}
+                          </ul>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -637,7 +573,7 @@ const BudgetPage = () => {
 
         {/* Create Modal */}
         {isCreateModalOpen && (
-          <div className="fixed inset-0 backdrop-blur bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md max-h-[70vh] overflow-y-auto transform transition-all duration-300 scale-100">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -747,7 +683,7 @@ const BudgetPage = () => {
 
         {/* Edit Modal */}
         {isEditModalOpen && editFormData && (
-          <div className="fixed inset-0 backdrop-blur bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md max-h-[70vh] overflow-y-auto transform transition-all duration-300 scale-100">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -857,8 +793,8 @@ const BudgetPage = () => {
 
         {/* Add Deal Modal */}
         {isAddDealModalOpen && selectedBudgetId && (
-          <div className="fixed inset-0 backdrop-blur bg-black bg-opacity-60 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-lg max-h-[70vh] overflow-y-auto transform transition-all duration-300 scale-100">
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md max-h-[70vh] overflow-y-auto transform transition-all duration-300 scale-100">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">
                   Chọn giao dịch để thêm
@@ -920,8 +856,8 @@ const BudgetPage = () => {
 
         {/* Deals Modal */}
         {isDealsModalOpen && selectedBudgetId && (
-          <div className="fixed inset-0 backdrop-blur bg-black bg-opacity-60 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-lg max-h-[70vh] overflow-y-auto transform transition-all duration-300 scale-100">
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md max-h-[70vh] overflow-y-auto transform transition-all duration-300 scale-100">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">
                   Danh sách giao dịch
@@ -972,7 +908,7 @@ const BudgetPage = () => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleConfirmRemoveDeal(deal.id);
+                              handleRemoveDealFromBudget(deal.id);
                             }}
                             className="text-red-500 hover:text-red-700 transition-colors duration-200"
                           >
@@ -990,7 +926,7 @@ const BudgetPage = () => {
 
         {/* Delete Confirmation Modal */}
         {isDeleteModalOpen && (
-          <div className="fixed inset-0 backdrop-blur bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-100">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -1015,43 +951,6 @@ const BudgetPage = () => {
                 </button>
                 <button
                   onClick={handleDelete}
-                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-all duration-300 flex items-center gap-2"
-                >
-                  <FaCheck />
-                  Xác nhận
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Remove Deal Confirmation Modal */}
-        {isRemoveDealModalOpen && (
-          <div className="fixed inset-0 backdrop-blur bg-black bg-opacity-60 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-100">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-gray-900">
-                  Xác nhận gỡ giao dịch
-                </h2>
-                <button
-                  onClick={() => setIsRemoveDealModalOpen(false)}
-                  className="text-gray-600 hover:text-gray-800 transition-colors duration-200"
-                >
-                  <FaTimes size={20} />
-                </button>
-              </div>
-              <p className="text-gray-700 mb-6">
-                Bạn có chắc muốn gỡ giao dịch này khỏi ngân sách không?
-              </p>
-              <div className="flex justify-end gap-4">
-                <button
-                  onClick={() => setIsRemoveDealModalOpen(false)}
-                  className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-all duration-200"
-                >
-                  Hủy
-                </button>
-                <button
-                  onClick={handleRemoveDealFromBudget}
                   className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-all duration-300 flex items-center gap-2"
                 >
                   <FaCheck />
