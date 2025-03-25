@@ -15,11 +15,17 @@ public class NotificationService {
     @Autowired
     private NotificationRepository notificationRepository;
 
-    public Notification save(Account acc,int money) {
+    public Notification save(Account acc,int money, boolean method) {
         Notification notification = new Notification();
         notification.setAccount(acc);
-        notification.setTittle("Cảnh báo vượt quá chi tiêu !!");
-        notification.setMessage("Bạn đã vượt quá số tiền là: "+money + " so với chi tiêu của mục tiêu đặt ra rồi. Hãy chú ý chi tiêu nhé !!");
+        if(method) {
+            notification.setTittle("Cảnh báo vượt quá chi tiêu !!");
+            notification.setMessage("Bạn đã vượt quá số tiền là: " + money + " so với chi tiêu của mục tiêu đặt ra rồi. Hãy chú ý chi tiêu nhé !!");
+        }
+        else {
+            notification.setTittle("Chúc mừng bạn đã đạt được mục tiêu !!");
+            notification.setMessage("Bạn đã hòan thành tốt mục tiêu tiết kiệm và hơn so với mục tiêu đặt ra với số tiền là: " + money + " so với mục tiêu của ngân sách đặt ra rồi. Chúc mừng nhé !!");
+        }
         return notificationRepository.save(notification);
     }
 

@@ -40,7 +40,7 @@ public class DealService {
             Budget budget = budgetService.getBudgetById(saved.getBudget().getId());
             if (budget.getTotal() <= caculateActualTotalInBudget(deal.getBudget().getId(), deal.getAccount().getId())) {
                 int money = (int) (caculateActualTotalInBudget(deal.getBudget().getId(), deal.getAccount().getId()) - budget.getTotal());
-                notificationService.save(saved.getAccount(), money);
+                notificationService.save(saved.getAccount(), money, saved.isType());
             }
         }
         return saved;
@@ -68,7 +68,7 @@ public class DealService {
             if (budget.getTotal() <= caculateActualTotalInBudget(deal.getBudget().getId(), deal.getAccount().getId())) {
 
                 int money = (int) (caculateActualTotalInBudget(deal.getBudget().getId(), deal.getAccount().getId()) - budget.getTotal());
-                notificationService.save(saved.getAccount(), money);
+                notificationService.save(saved.getAccount(), money,saved.isType());
             }
         }
         return saved;
