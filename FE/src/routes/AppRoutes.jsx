@@ -8,7 +8,8 @@ import SignUp from "../pages/SignUp";
 import AccountPage from "../pages/AccountPage";
 import TransactionPage from "../pages/TransactionPage";
 import Dashboard from "../pages/DashboardPage";
-
+import BudgetPage from "../pages/BudgetPage";
+import CategoryPage from "../pages/CategoryPage";
 // Placeholder components for pages that need backend
 const PlaceholderPage = ({ title, description }) => (
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -61,27 +62,11 @@ const AppRoutes = () => {
       <Route path="/signup" element={<SignUp />} />{" "}
       {/* Thêm route cho SignUp */}
       <Route path="/transactions" element={<TransactionPage />} />
-      <Route path="/dashboard" element={<Dashboard />} />{" "}
-      {/* Thêm route cho SignUp */}
-      {/* Routes that need backend (using placeholders) */}
-      <Route
-        path="/budgets"
-        element={
-          <PlaceholderPage
-            title="Budgets"
-            description="This page will allow users to create and manage their budget categories and spending limits."
-          />
-        }
-      />
-      <Route
-        path="/categories"
-        element={
-          <PlaceholderPage
-            title="Categories"
-            description="This page will enable users to create, edit and organize transaction categories."
-          />
-        }
-      />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/budgets" element={<BudgetPage />} />
+      <Route path="/categories" element={<CategoryPage />} />
+     
+    
       <Route
         path="/notifications"
         element={
