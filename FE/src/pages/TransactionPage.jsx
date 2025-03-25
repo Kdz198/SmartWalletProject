@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaEllipsisH, FaTimes } from 'react-icons/fa';
+import { FaPlus, FaEllipsisH, FaTimes, FaArrowUp, FaArrowDown } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 
 const TransactionPage = () => {
@@ -11,9 +11,9 @@ const TransactionPage = () => {
   const [error, setError] = useState(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false); // Modal thêm phân loại
-  const [isAddBudgetModalOpen, setIsAddBudgetModalOpen] = useState(false); // Modal thêm ngân sách
-  const [selectedDealId, setSelectedDealId] = useState(null); // Deal đang chọn để thêm category/budget
+  const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
+  const [isAddBudgetModalOpen, setIsAddBudgetModalOpen] = useState(false);
+  const [selectedDealId, setSelectedDealId] = useState(null);
   const [categories, setCategories] = useState([]);
   const [budgets, setBudgets] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -21,6 +21,7 @@ const TransactionPage = () => {
   const [selectedType, setSelectedType] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortOrder, setSortOrder] = useState('desc'); // Thêm state để quản lý thứ tự sort, mặc định là giảm dần
   const transactionsPerPage = 10;
   const [createFormData, setCreateFormData] = useState({
     type: false,
@@ -65,7 +66,7 @@ const TransactionPage = () => {
           category: item.category?.id || null,
           budget: item.budget?.id || null,
         }))
-        .sort((a, b) => b.id - a.id); // Sắp xếp giảm dần theo id
+        .sort((a, b) => (sortOrder === 'desc' ? b.id - a.id : a.id - b.id)); // Sắp xếp theo sortOrder
       setTransactions(formattedData);
       applyFilters(formattedData);
       setLoading(false);
@@ -131,7 +132,7 @@ const TransactionPage = () => {
       setLoading(true);
       Promise.all([fetchTransactions(), fetchCategories(), fetchBudgets()]).finally(() => setLoading(false));
     }
-  }, [user, accountId, selectedCategory, selectedBudget]);
+  }, [user, accountId, selectedCategory, selectedBudget, sortOrder]); // Thêm sortOrder vào dependency
 
   // Re-apply filters when type or month changes
   useEffect(() => {
@@ -158,6 +159,11 @@ const TransactionPage = () => {
 
   const handleMonthFilterChange = (e) => {
     setSelectedMonth(e.target.value);
+  };
+
+  // Handle sort order change
+  const toggleSortOrder = () => {
+    setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
   };
 
   // Pagination logic
@@ -427,7 +433,7 @@ const TransactionPage = () => {
           {/* Bỏ h1 "Giao dịch của bạn" */}
           <div className="flex items-center gap-6">
             <div className="flex flex-wrap items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <div className="flex items-center gap-2 min-w-[200px]">
+              <div className="flex items-center gap-2 min-w-[200px]">
                 <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Phân loại:</label>
                 <select
                   value={selectedCategory}
@@ -494,6 +500,12 @@ const TransactionPage = () => {
                 className="flex items-center gap-2 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition-all duration-200 text-sm font-medium"
               >
                 Hiện tất cả
+              </button>
+              <button
+                onClick={toggleSortOrder}
+                className="flex items-center gap-2 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition-all duration-200"
+              >
+                {sortOrder === 'desc' ? <FaArrowDown size={16} /> : <FaArrowUp size={16} />}
               </button>
             </div>
             <button
