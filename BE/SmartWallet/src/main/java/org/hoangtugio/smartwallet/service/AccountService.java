@@ -15,38 +15,40 @@ public class AccountService {
     private AccountRepository accountRepository;
 
     public Account save(Account account) {
-        if(accountRepository.existsAccountByEmail(account.getEmail())) {
+        if (accountRepository.existsAccountByEmail(account.getEmail())) {
             throw new CustomException("Email đã tồn tại !!", HttpStatus.CONFLICT);
         }
         return accountRepository.save(account);
     }
 
-    public Account getAccountById(int id){
-        if(!accountRepository.existsById(id)){
-            throw new CustomException("Account không tồn tại !!",HttpStatus.BAD_REQUEST);
+    public Account getAccountById(int id) {
+        if (!accountRepository.existsById(id)) {
+            throw new CustomException("Account không tồn tại !!", HttpStatus.BAD_REQUEST);
         }
         return accountRepository.getAccountById(id);
     }
 
-    public List<Account> getAllAccounts(){
+    public List<Account> getAllAccounts() {
         return accountRepository.findAll();
     }
 
-    public Account updateAccount(Account account){
-        if(accountRepository.getAccountById(account.getId()) != null){
-            if(!accountRepository.existsAccountByEmail(account.getEmail())) {
-                return accountRepository.save(account);
-            }
-            else throw new CustomException("Email đã tồn tại !!", HttpStatus.CONFLICT);
+    public Account updateAccount(Account account) {
+
+        Account accountInDB = accountRepository.getAccountById(account.getId());
+        Account accountwithMail = accountRepository.findByEmail(account.getEmail());
+        if ( accountwithMail!=null &&!accountInDB.equals(accountwithMail)) {
+            throw new CustomException("Emaid da co thang khac dung", HttpStatus.CONFLICT);
         }
-        else throw new CustomException("Account không tồn tại !!",HttpStatus.BAD_REQUEST);
+
+        if (accountInDB != null) {
+            return accountRepository.save(account);
+        } else throw new CustomException("Account không tồn tại !!", HttpStatus.BAD_REQUEST);
     }
 
-    public void deleteAccount(int id){
-        if(accountRepository.existsById(id)){
+    public void deleteAccount(int id) {
+        if (accountRepository.existsById(id)) {
             accountRepository.deleteById(id);
-        }
-        else throw new CustomException("Account không tồn tại !!",HttpStatus.BAD_REQUEST);
+        } else throw new CustomException("Account không tồn tại !!", HttpStatus.BAD_REQUEST);
     }
 
     public Account findByEmail(String username) {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { formatDate } from "../utils/formatDate";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const maleAvatar = "https://avatar.iran.liara.run/public/boy";
 const femaleAvatar = "https://avatar.iran.liara.run/public/girl";
@@ -21,6 +21,8 @@ const AccountPage = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [success, setSuccess] = useState("");
+  const [showPopup, setShowPopup] = useState(false); // Trạng thái cho popup
+  const navigate = useNavigate(); // Để điều hướng về trang đăng nhập
 
   useEffect(() => {
     const fetchAccountData = async () => {
@@ -116,8 +118,22 @@ const AccountPage = () => {
       console.log("API Response /update:", data);
       setAccountData(data);
       setIsEditing(false);
-      setSuccess("Account updated successfully!");
-      setTimeout(() => setSuccess(""), 3000);
+
+      // Kiểm tra nếu email thay đổi
+      if (formData.email !== accountData.email) {
+        setShowPopup(true); // Hiển thị popup
+        setTimeout(async () => {
+          setShowPopup(false);
+          await fetch("http://localhost:8080/logout", {
+            method: "POST",
+            credentials: "include",
+          });
+          navigate("/login"); // Chuyển hướng về trang đăng nhập
+        }, 3000); // Hiển thị popup trong 3 giây
+      } else {
+        setSuccess("Account updated successfully!");
+        setTimeout(() => setSuccess(""), 3000);
+      }
     } catch (err) {
       console.error("Update Error:", err.message);
       setError(err.message);
@@ -395,6 +411,20 @@ const AccountPage = () => {
             )}
           </div>
         </div>
+
+        {/* Popup hiển thị khi thay đổi email */}
+        {showPopup && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <div className="bg-white p-6 rounded-lg shadow-xl transform transition-all duration-300 scale-100">
+              <h3 className="text-lg font-semibold text-green-600">
+                Cập nhật thành công!
+              </h3>
+              <p className="mt-2 text-gray-700">
+                Bạn đã thay đổi email thành công. Vui lòng đăng nhập lại.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-all duration-200">
