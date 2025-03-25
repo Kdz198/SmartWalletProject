@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import {
   FaPlus,
-  FaEllipsisH,
   FaTimes,
   FaTrash,
   FaPiggyBank,
   FaCheck,
+  FaEdit, // Thêm icon FaEdit cho nút Sửa
 } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 import { toast, ToastContainer } from "react-toastify";
@@ -27,7 +27,6 @@ const BudgetPage = () => {
   const [selectedBudgetId, setSelectedBudgetId] = useState(null);
   const [dealToRemove, setDealToRemove] = useState(null);
   const [budgetToDelete, setBudgetToDelete] = useState(null);
-  const [openDropdown, setOpenDropdown] = useState(null);
   const [selectedType, setSelectedType] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
   const [createFormData, setCreateFormData] = useState({
@@ -41,6 +40,7 @@ const BudgetPage = () => {
 
   const accountId = user?.id;
 
+  // Giữ nguyên các hàm khác như fetchBudgetsAndDeals, applyFilter, handleTypeFilterChange, v.v.
   const fetchBudgetsAndDeals = async () => {
     if (!accountId) return;
     setLoading(true);
@@ -48,9 +48,7 @@ const BudgetPage = () => {
       console.log(`API Request: GET /api/budget/findbyaccount?id=${accountId}`);
       const budgetResponse = await fetch(
         `http://localhost:8080/api/budget/findbyaccount?id=${accountId}`,
-        {
-          credentials: "include",
-        }
+        { credentials: "include" }
       );
       if (!budgetResponse.ok) {
         const errorData = await budgetResponse.json();
@@ -63,9 +61,7 @@ const BudgetPage = () => {
       console.log(`API Request: GET /api/deal/findbyaccount?id=${accountId}`);
       const dealResponse = await fetch(
         `http://localhost:8080/api/deal/findbyaccount?id=${accountId}`,
-        {
-          credentials: "include",
-        }
+        { credentials: "include" }
       );
       if (!dealResponse.ok) {
         const errorData = await dealResponse.json();
@@ -133,10 +129,6 @@ const BudgetPage = () => {
       fetchBudgetsAndDeals();
     }
   }, [user, accountId]);
-
-  const toggleDropdown = (id) => {
-    setOpenDropdown(openDropdown === id ? null : id);
-  };
 
   const handleCreateInputChange = (e) => {
     const { name, value } = e.target;
@@ -311,7 +303,6 @@ const BudgetPage = () => {
       }
       console.log("API Response Success: Budget deleted", budgetToDelete);
       await fetchBudgetsAndDeals();
-      setOpenDropdown(null);
       setIsDeleteModalOpen(false);
       toast.success("Ngân sách đã được xóa thành công!");
     } catch (err) {
@@ -323,7 +314,6 @@ const BudgetPage = () => {
   const handleConfirmDelete = (budgetId) => {
     setBudgetToDelete(budgetId);
     setIsDeleteModalOpen(true);
-    setOpenDropdown(null);
   };
 
   const handleEdit = (budget) => {
@@ -335,13 +325,11 @@ const BudgetPage = () => {
       month: budget.month.toString(),
     });
     setIsEditModalOpen(true);
-    setOpenDropdown(null);
   };
 
   const handleOpenAddDealModal = (budgetId) => {
     setSelectedBudgetId(budgetId);
     setIsAddDealModalOpen(true);
-    setOpenDropdown(null);
   };
 
   const handleOpenDealsModal = (budgetId) => {
@@ -481,8 +469,8 @@ const BudgetPage = () => {
       <div className="max-w-5xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-extrabold text-gray-900 flex items-center space-x-2">
-            <FaPiggyBank className="text-blue-600" />
             <span>Ngân sách của bạn</span>
+            <FaPiggyBank className="text-blue-600" />
           </h1>
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-4 bg-white p-4 rounded-xl shadow-lg border border-gray-100">
@@ -599,7 +587,7 @@ const BudgetPage = () => {
                     </div>
                   </div>
                   <div
-                    className="flex items-center gap-6"
+                    className="flex items-center gap-4" // Thay gap-6 thành gap-4 để cách đều
                     onClick={(e) => e.stopPropagation()}
                   >
                     <p
@@ -609,40 +597,31 @@ const BudgetPage = () => {
                     >
                       {budget.total.toLocaleString("vi-VN")} VNĐ
                     </p>
-                    <div className="relative">
+                    <div className="flex gap-3">
+                      {" "}
+                      {/* Thêm div flex với gap-3 để chứa 2 nút */}
                       <button
-                        onClick={() => toggleDropdown(budget.id)}
-                        className="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100 transition-all duration-200"
+                        onClick={() => handleEdit(budget)}
+                        className="text-blue-500 hover:text-blue-700 p-2 rounded-full hover:bg-blue-100 transition-all duration-200"
+                        title="Sửa ngân sách" // Thêm title để hiện tooltip
                       >
-                        <FaEllipsisH size={16} />
+                        <FaEdit size={25} />
                       </button>
-                      {openDropdown === budget.id && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl z-10 border border-gray-100">
-                          <ul className="py-1 text-sm text-gray-700">
-                            <li
-                              onClick={() => handleEdit(budget)}
-                              className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150"
-                            >
-                              Sửa ngân sách
-                            </li>
-                            <li
-                              onClick={() => handleConfirmDelete(budget.id)}
-                              className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150 text-red-600"
-                            >
-                              Xóa
-                            </li>
-                            {availableDeals.length > 0 && (
-                              <li
-                                onClick={() =>
-                                  handleOpenAddDealModal(budget.id)
-                                }
-                                className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150"
-                              >
-                                Thêm giao dịch
-                              </li>
-                            )}
-                          </ul>
-                        </div>
+                      <button
+                        onClick={() => handleConfirmDelete(budget.id)}
+                        className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-100 transition-all duration-200"
+                        title="Xóa ngân sách" // Thêm title để hiện tooltip
+                      >
+                        <FaTrash size={22} />
+                      </button>
+                      {availableDeals.length > 0 && (
+                        <button
+                          onClick={() => handleOpenAddDealModal(budget.id)}
+                          className="text-green-500 hover:text-green-700 p-2 rounded-full hover:bg-green-100 transition-all duration-200"
+                          title="Thêm giao dịch" // Thêm title để hiện tooltip
+                        >
+                          <FaPlus size={16} />
+                        </button>
                       )}
                     </div>
                   </div>

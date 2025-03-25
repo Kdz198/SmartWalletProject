@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import {
   FaPlus,
-  FaEllipsisH,
+  FaTrash,
   FaTimes,
   FaArrowUp,
   FaArrowDown,
-  FaExchangeAlt,
+  FaEdit,
   FaCheck,
 } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
@@ -732,56 +732,27 @@ const TransactionPage = () => {
                     {transaction.type === "earn" ? "+" : ""}
                     {Math.abs(transaction.total).toLocaleString("vi-VN")} VNĐ
                   </p>
-                  <div className="relative">
+                  <div className="flex items-center gap-2">
                     <button
-                      onClick={() => toggleDropdown(transaction.id)}
-                      className="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100 transition-all duration-200"
+                      onClick={() => handleEdit(transaction)}
+                      className="text-blue-500 hover:text-blue-700 p-2 rounded-full hover:bg-blue-100 transition-all duration-200"
+                      title="Sửa giao dịch"
                     >
-                      <FaEllipsisH size={16} />
+                      <FaEdit size={25} />
                     </button>
-                    {openDropdown === transaction.id && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl z-10 border border-gray-100">
-                        <ul className="py-1 text-sm text-gray-700">
-                          <li
-                            onClick={() => handleEdit(transaction)}
-                            className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150"
-                          >
-                            Sửa giao dịch
-                          </li>
-                          <li
-                            onClick={() => handleConfirmDelete(transaction.id)}
-                            className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150 text-red-600"
-                          >
-                            Xóa
-                          </li>
-                          {!transaction.category && (
-                            <li
-                              onClick={() =>
-                                openAddCategoryModal(transaction.id)
-                              }
-                              className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150"
-                            >
-                              Thêm phân loại
-                            </li>
-                          )}
-                          {!transaction.budget && (
-                            <li
-                              onClick={() => openAddBudgetModal(transaction.id)}
-                              className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150"
-                            >
-                              Thêm ngân sách
-                            </li>
-                          )}
-                        </ul>
-                      </div>
-                    )}
+                    <button
+                      onClick={() => handleConfirmDelete(transaction.id)}
+                      className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-100 transition-all duration-200"
+                      title="Xóa giao dịch"
+                    >
+                      <FaTrash size={22} />
+                    </button>
                   </div>
                 </div>
               </div>
             ))
           )}
         </div>
-
         {totalPages > 1 && (
           <div className="mt-6 flex justify-center gap-2">
             {[...Array(totalPages)].map((_, index) => (
