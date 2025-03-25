@@ -10,6 +10,7 @@ import TransactionPage from "../pages/TransactionPage";
 import Dashboard from "../pages/DashboardPage";
 import BudgetPage from "../pages/BudgetPage";
 import CategoryPage from "../pages/CategoryPage";
+import NotificationPage from "../pages/NotificationPage";
 // Placeholder components for pages that need backend
 const PlaceholderPage = ({ title, description }) => (
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -65,17 +66,7 @@ const AppRoutes = () => {
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/budgets" element={<BudgetPage />} />
       <Route path="/categories" element={<CategoryPage />} />
-     
-    
-      <Route
-        path="/notifications"
-        element={
-          <PlaceholderPage
-            title="Notifications"
-            description="This page will display the user's system notifications and alerts."
-          />
-        }
-      />
+      <Route path="/notifications" element={<NotificationPage />} />
       {/* Fallback for unknown routes */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
