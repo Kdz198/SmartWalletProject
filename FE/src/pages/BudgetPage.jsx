@@ -5,10 +5,9 @@ import {
   FaTimes,
   FaPiggyBank,
   FaTrash,
+  FaCheck,
 } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 
 const BudgetPage = () => {
   const { user } = useAuth();
@@ -35,8 +34,31 @@ const BudgetPage = () => {
   });
   const [editFormData, setEditFormData] = useState(null);
   const [formErrors, setFormErrors] = useState({});
+  const [toast, setToast] = useState({ show: false, message: "", type: "" });
 
   const accountId = user?.id;
+
+  // Hàm hiển thị toast
+  const showToast = (message, type) => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: "", type: "" }), 3000);
+  };
+
+  // Hàm lấy màu sắc cho toast
+  const getToastColor = (type) => {
+    switch (type) {
+      case "create":
+        return "green-500"; // Xanh lục cho tạo mới
+      case "update":
+        return "blue-500"; // Xanh dương cho cập nhật
+      case "delete":
+        return "red-500"; // Đỏ cho xóa
+      case "error":
+        return "red-500"; // Đỏ cho lỗi
+      default:
+        return "gray-500";
+    }
+  };
 
   const fetchBudgetsAndDeals = async () => {
     if (!accountId) return;
@@ -73,7 +95,7 @@ const BudgetPage = () => {
           };
         })
         .slice()
-        .reverse(); // Thêm slice().reverse() để hiển thị từ mới nhất đến cũ nhất
+        .reverse();
 
       setBudgets(formattedBudgets);
       setDeals(dealData);
@@ -82,6 +104,7 @@ const BudgetPage = () => {
     } catch (err) {
       setError(err.message);
       setLoading(false);
+      showToast(err.message, "error");
     }
   };
 
@@ -150,6 +173,7 @@ const BudgetPage = () => {
     e.preventDefault();
     if (!accountId) {
       setFormErrors({ general: "Vui lòng đăng nhập để tạo ngân sách" });
+      showToast("Vui lòng đăng nhập để tạo ngân sách", "error");
       return;
     }
 
@@ -189,10 +213,11 @@ const BudgetPage = () => {
         month: "",
       });
       setFormErrors({});
-      toast.success("Ngân sách đã được tạo thành công!");
+      showToast("Ngân sách đã được tạo thành công!", "create");
     } catch (err) {
       console.error("Lỗi khi tạo ngân sách:", err.message);
       setFormErrors({ general: err.message });
+      showToast(err.message, "error");
     }
   };
 
@@ -200,6 +225,7 @@ const BudgetPage = () => {
     e.preventDefault();
     if (!accountId || !editFormData.id) {
       setFormErrors({ general: "Dữ liệu không hợp lệ để cập nhật ngân sách" });
+      showToast("Dữ liệu không hợp lệ để cập nhật ngân sách", "error");
       return;
     }
 
@@ -237,10 +263,11 @@ const BudgetPage = () => {
       setIsEditModalOpen(false);
       setEditFormData(null);
       setFormErrors({});
-      toast.success("Ngân sách đã được cập nhật thành công!");
+      showToast("Ngân sách đã được cập nhật thành công!", "update");
     } catch (err) {
       console.error("Lỗi khi cập nhật ngân sách:", err.message);
       setFormErrors({ general: err.message });
+      showToast(err.message, "error");
     }
   };
 
@@ -253,17 +280,34 @@ const BudgetPage = () => {
           credentials: "include",
         }
       );
+
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Không thể xóa ngân sách");
+        // Kiểm tra lỗi khóa ngoại/khóa chính (thường là mã lỗi 400, 409 hoặc 500 tùy backend)
+        if (
+          errorData.message?.includes("foreign key") ||
+          errorData.message?.includes("constraint")
+        ) {
+          throw new Error(
+            "Không thể xóa ngân sách vì đang có giao dịch trong ngân sách. Vui lòng kiểm tra lại giao liên quan."
+          );
+        }
+        throw new Error(
+          errorData.message ||
+            "Không thể xóa ngân sách vì đang có giao dịch trong ngân sách. Vui lòng kiểm tra lại giao liên quan."
+        );
       }
+
+      // Xóa thành công
       await fetchBudgetsAndDeals();
-      setOpenDropdown(null);
-      setIsDeleteModalOpen(false);
-      toast.success("Ngân sách đã được xóa thành công!");
+      showToast("Ngân sách đã được xóa thành công!", "delete");
     } catch (err) {
       console.error("Lỗi khi xóa ngân sách:", err.message);
-      toast.error("Có lỗi xảy ra khi xóa ngân sách: " + err.message);
+      showToast(err.message, "error");
+    } finally {
+      // Luôn đóng modal và trở về màn chính dù thành công hay thất bại
+      setOpenDropdown(null);
+      setIsDeleteModalOpen(false);
     }
   };
 
@@ -327,10 +371,10 @@ const BudgetPage = () => {
 
       await fetchBudgetsAndDeals();
       setIsAddDealModalOpen(false);
-      toast.success("Giao dịch đã được thêm vào ngân sách!");
+      showToast("Giao dịch đã được thêm vào ngân sách!", "update");
     } catch (err) {
       console.error("Lỗi khi thêm deal vào ngân sách:", err.message);
-      toast.error("Có lỗi xảy ra khi thêm deal: " + err.message);
+      showToast("Có lỗi xảy ra khi thêm deal: " + err.message, "error");
     }
   };
 
@@ -364,10 +408,10 @@ const BudgetPage = () => {
       }
 
       await fetchBudgetsAndDeals();
-      toast.success("Giao dịch đã được gỡ khỏi ngân sách!");
+      showToast("Giao dịch đã được gỡ khỏi ngân sách!", "update");
     } catch (err) {
       console.error("Lỗi khi gỡ deal khỏi ngân sách:", err.message);
-      toast.error("Có lỗi xảy ra khi gỡ deal: " + err.message);
+      showToast("Có lỗi xảy ra khi gỡ deal: " + err.message, "error");
     }
   };
 
@@ -377,6 +421,17 @@ const BudgetPage = () => {
         <p className="text-gray-700 text-xl font-semibold">
           Vui lòng đăng nhập để xem ngân sách.
         </p>
+        {toast.show && (
+          <div className="fixed top-4 right-4 z-50">
+            <div
+              className={`bg-${getToastColor(
+                toast.type
+              )} text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-fade-in`}
+            >
+              <span>{toast.message}</span>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -391,6 +446,17 @@ const BudgetPage = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-100 to-blue-200 flex items-center justify-center">
         <p className="text-red-600 text-xl font-semibold">Lỗi: {error}</p>
+        {toast.show && (
+          <div className="fixed top-4 right-4 z-50">
+            <div
+              className={`bg-${getToastColor(
+                toast.type
+              )} text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-fade-in`}
+            >
+              <span>{toast.message}</span>
+            </div>
+          </div>
+        )}
       </div>
     );
 
@@ -571,9 +637,22 @@ const BudgetPage = () => {
           )}
         </div>
 
+        {/* Toast */}
+        {toast.show && (
+          <div className="fixed top-4 right-4 z-50">
+            <div
+              className={`bg-${getToastColor(
+                toast.type
+              )} text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-fade-in`}
+            >
+              <span>{toast.message}</span>
+            </div>
+          </div>
+        )}
+
         {/* Create Modal */}
         {isCreateModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black backdrop-blur bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md max-h-[70vh] overflow-y-auto transform transition-all duration-300 scale-100">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -683,7 +762,7 @@ const BudgetPage = () => {
 
         {/* Edit Modal */}
         {isEditModalOpen && editFormData && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black backdrop-blur bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md max-h-[70vh] overflow-y-auto transform transition-all duration-300 scale-100">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -793,7 +872,7 @@ const BudgetPage = () => {
 
         {/* Add Deal Modal */}
         {isAddDealModalOpen && selectedBudgetId && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black backdrop-blur bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md max-h-[70vh] overflow-y-auto transform transition-all duration-300 scale-100">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -960,12 +1039,6 @@ const BudgetPage = () => {
             </div>
           </div>
         )}
-
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-        />
       </div>
     </div>
   );
