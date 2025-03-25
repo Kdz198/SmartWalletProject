@@ -11,14 +11,17 @@ const TransactionPage = () => {
   const [error, setError] = useState(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false); // Modal thêm phân loại
+  const [isAddBudgetModalOpen, setIsAddBudgetModalOpen] = useState(false); // Modal thêm ngân sách
+  const [selectedDealId, setSelectedDealId] = useState(null); // Deal đang chọn để thêm category/budget
   const [categories, setCategories] = useState([]);
   const [budgets, setBudgets] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedBudget, setSelectedBudget] = useState('');
-  const [selectedType, setSelectedType] = useState(''); // Filter thu/chi
-  const [selectedMonth, setSelectedMonth] = useState(''); // Filter tháng
-  const [currentPage, setCurrentPage] = useState(1); // Trang hiện tại
-  const transactionsPerPage = 10; // Số giao dịch mỗi trang
+  const [selectedType, setSelectedType] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const transactionsPerPage = 10;
   const [createFormData, setCreateFormData] = useState({
     type: false,
     total: '',
@@ -50,17 +53,19 @@ const TransactionPage = () => {
       const response = await fetch(url, { credentials: 'include' });
       if (!response.ok) throw new Error('Không thể lấy dữ liệu giao dịch');
       const data = await response.json();
-      const formattedData = data.map((item) => ({
-        id: item.id,
-        type: item.type ? 'pay' : 'earn',
-        total: item.total,
-        description: item.description,
-        date: item.date,
-        method: item.method ? 'Bank' : 'Cash',
-        account: item.account ? { name: `Tài khoản ${item.account.id}` } : { name: 'Chưa xác định' },
-        category: item.category?.id || null,
-        budget: item.budget?.id || null,
-      }));
+      const formattedData = data
+        .map((item) => ({
+          id: item.id,
+          type: item.type ? 'pay' : 'earn',
+          total: item.total,
+          description: item.description,
+          date: item.date,
+          method: item.method ? 'Bank' : 'Cash',
+          account: item.account ? { name: `Tài khoản ${item.account.id}` } : { name: 'Chưa xác định' },
+          category: item.category?.id || null,
+          budget: item.budget?.id || null,
+        }))
+        .sort((a, b) => b.id - a.id); // Sắp xếp giảm dần theo id
       setTransactions(formattedData);
       applyFilters(formattedData);
       setLoading(false);
@@ -117,7 +122,7 @@ const TransactionPage = () => {
       filtered = filtered.filter((t) => new Date(t.date).getMonth() + 1 === parseInt(selectedMonth, 10));
     }
     setFilteredTransactions(filtered);
-    setCurrentPage(1); // Reset về trang 1 khi filter thay đổi
+    setCurrentPage(1);
   };
 
   // Load initial data
@@ -348,6 +353,7 @@ const TransactionPage = () => {
       if (!response.ok) throw new Error('Không thể cập nhật giao dịch');
 
       await fetchTransactions();
+      setIsAddCategoryModalOpen(false);
       setOpenDropdown(null);
     } catch (err) {
       console.error('Lỗi khi thêm phân loại:', err.message);
@@ -383,6 +389,7 @@ const TransactionPage = () => {
       if (!response.ok) throw new Error('Không thể cập nhật giao dịch');
 
       await fetchTransactions();
+      setIsAddBudgetModalOpen(false);
       setOpenDropdown(null);
     } catch (err) {
       console.error('Lỗi khi thêm vào ngân sách:', err.message);
@@ -390,12 +397,23 @@ const TransactionPage = () => {
     }
   };
 
-  // Check if user is not logged in
+  // Open modals for adding category or budget
+  const openAddCategoryModal = (dealId) => {
+    setSelectedDealId(dealId);
+    setIsAddCategoryModalOpen(true);
+    setOpenDropdown(null);
+  };
+
+  const openAddBudgetModal = (dealId) => {
+    setSelectedDealId(dealId);
+    setIsAddBudgetModalOpen(true);
+    setOpenDropdown(null);
+  };
+
   if (!user) {
     return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><p className="text-gray-600 text-lg">Vui lòng đăng nhập để xem giao dịch.</p></div>;
   }
 
-  // Loading and error states
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><p className="text-gray-600 text-lg">Đang tải...</p></div>;
   if (error) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><p className="text-red-600 text-lg">Lỗi: {error}</p></div>;
 
@@ -406,15 +424,15 @@ const TransactionPage = () => {
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Giao dịch của bạn</h1>
+          {/* Bỏ h1 "Giao dịch của bạn" */}
           <div className="flex items-center gap-6">
-            <div className="flex items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+            <div className="flex items-center gap-2 min-w-[200px]">
                 <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Phân loại:</label>
                 <select
                   value={selectedCategory}
                   onChange={handleCategoryFilterChange}
-                  className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 ease-in-out"
+                  className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 ease-in-out"
                 >
                   <option value="">Tất cả</option>
                   {categories.map((cat) => (
@@ -424,12 +442,12 @@ const TransactionPage = () => {
                   ))}
                 </select>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-[200px]">
                 <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Ngân sách:</label>
                 <select
                   value={selectedBudget}
                   onChange={handleBudgetFilterChange}
-                  className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-500 transition-all duration-200 ease-in-out"
+                  className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-500 transition-all duration-200 ease-in-out"
                 >
                   <option value="">Tất cả</option>
                   {budgets.map((bud) => (
@@ -439,24 +457,24 @@ const TransactionPage = () => {
                   ))}
                 </select>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-[200px]">
                 <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Loại:</label>
                 <select
                   value={selectedType}
                   onChange={handleTypeFilterChange}
-                  className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-green-300 focus:border-green-500 transition-all duration-200 ease-in-out"
+                  className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-green-300 focus:border-green-500 transition-all duration-200 ease-in-out"
                 >
                   <option value="">Tất cả</option>
                   <option value="false">Thu nhập</option>
                   <option value="true">Chi tiêu</option>
                 </select>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-[200px]">
                 <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Tháng:</label>
                 <select
                   value={selectedMonth}
                   onChange={handleMonthFilterChange}
-                  className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-yellow-300 focus:border-yellow-500 transition-all duration-200 ease-in-out"
+                  className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-yellow-300 focus:border-yellow-500 transition-all duration-200 ease-in-out"
                 >
                   <option value="">Tất cả</option>
                   {[...Array(12)].map((_, i) => (
@@ -480,9 +498,9 @@ const TransactionPage = () => {
             </div>
             <button
               onClick={() => setIsCreateModalOpen(true)}
-              className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-5 py-2.5 rounded-full hover:from-blue-600 hover:to-blue-700 transition-all duration-300 shadow-md"
+              className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-3 rounded-full hover:from-blue-600 hover:to-blue-700 transition-all duration-300 shadow-md"
             >
-              <FaPlus size={16} /> <span className="font-medium">Thêm giao dịch</span>
+              <FaPlus size={16} />
             </button>
           </div>
         </div>
@@ -548,39 +566,19 @@ const TransactionPage = () => {
                             Xóa
                           </li>
                           {!transaction.category && (
-                            <li className="relative group">
-                              <span className="block px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
-                                Thêm phân loại
-                              </span>
-                              <ul className="absolute left-full top-0 mt-0 w-48 bg-white rounded-lg shadow-xl border border-gray-100 hidden group-hover:block">
-                                {categories.map((cat) => (
-                                  <li
-                                    key={cat.id}
-                                    onClick={() => handleAddCategory(transaction.id, cat.id)}
-                                    className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150"
-                                  >
-                                    {cat.name}
-                                  </li>
-                                ))}
-                              </ul>
+                            <li
+                              onClick={() => openAddCategoryModal(transaction.id)}
+                              className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+                            >
+                              Thêm phân loại
                             </li>
                           )}
                           {!transaction.budget && (
-                            <li className="relative group">
-                              <span className="block px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
-                                Thêm vào ngân sách
-                              </span>
-                              <ul className="absolute left-full top-0 mt-0 w-48 bg-white rounded-lg shadow-xl border border-gray-100 hidden group-hover:block">
-                                {budgets.map((bud) => (
-                                  <li
-                                    key={bud.id}
-                                    onClick={() => handleAddBudget(transaction.id, bud.id)}
-                                    className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150"
-                                  >
-                                    {bud.name}
-                                  </li>
-                                ))}
-                              </ul>
+                            <li
+                              onClick={() => openAddBudgetModal(transaction.id)}
+                              className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+                            >
+                              Thêm ngân sách
                             </li>
                           )}
                         </ul>
@@ -848,6 +846,64 @@ const TransactionPage = () => {
                   Cập nhật giao dịch
                 </button>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Add Category Modal */}
+        {isAddCategoryModalOpen && selectedDealId && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-md max-h-[70vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-gray-800">Chọn phân loại</h2>
+                <button onClick={() => setIsAddCategoryModalOpen(false)} className="text-gray-500 hover:text-gray-700">
+                  <FaTimes size={20} />
+                </button>
+              </div>
+              <div className="space-y-3">
+                {categories.length === 0 ? (
+                  <p className="text-gray-500 text-center">Không có phân loại nào.</p>
+                ) : (
+                  categories.map((cat) => (
+                    <div
+                      key={cat.id}
+                      onClick={() => handleAddCategory(selectedDealId, cat.id)}
+                      className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-all duration-200"
+                    >
+                      {cat.name}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Budget Modal */}
+        {isAddBudgetModalOpen && selectedDealId && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-md max-h-[70vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-gray-800">Chọn ngân sách</h2>
+                <button onClick={() => setIsAddBudgetModalOpen(false)} className="text-gray-500 hover:text-gray-700">
+                  <FaTimes size={20} />
+                </button>
+              </div>
+              <div className="space-y-3">
+                {budgets.length === 0 ? (
+                  <p className="text-gray-500 text-center">Không có ngân sách nào.</p>
+                ) : (
+                  budgets.map((bud) => (
+                    <div
+                      key={bud.id}
+                      onClick={() => handleAddBudget(selectedDealId, bud.id)}
+                      className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-all duration-200"
+                    >
+                      {bud.name}
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
         )}
