@@ -12,6 +12,8 @@ const TransactionPage = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [categories, setCategories] = useState([]);
   const [budgets, setBudgets] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(''); // Bộ lọc category
+  const [selectedBudget, setSelectedBudget] = useState(''); // Bộ lọc budget
   const [createFormData, setCreateFormData] = useState({
     type: false,
     total: '',
@@ -26,18 +28,26 @@ const TransactionPage = () => {
 
   const accountId = user?.id;
 
-  // Fetch transactions from API based on accountId
+  // Fetch transactions from API based on accountId, categoryId, and budgetId
   const fetchTransactions = async () => {
     if (!accountId) return;
+    setLoading(true);
     try {
-      const response = await fetch(`http://localhost:8080/api/deal/findbyaccount?id=${accountId}`, {
-        credentials: 'include',
-      });
+      let url = `http://localhost:8080/api/deal/findbyaccount?id=${accountId}`;
+      if (selectedCategory && !selectedBudget) {
+        url = `http://localhost:8080/api/deal/findbyaccountandcate?accountId=${accountId}&CateId=${selectedCategory}`;
+      } else if (selectedBudget && !selectedCategory) {
+        url = `http://localhost:8080/api/deal/findbybudgetandaccount?accountId=${accountId}&id=${selectedBudget}`;
+      } else if (selectedCategory && selectedBudget) {
+        url = `http://localhost:8080/api/deal/findbybudgetandaccount?accountId=${accountId}&id=${selectedBudget}`;
+      }
+
+      const response = await fetch(url, { credentials: 'include' });
       if (!response.ok) throw new Error('Không thể lấy dữ liệu giao dịch');
       const data = await response.json();
       const formattedData = data.map((item) => ({
         id: item.id,
-        type: item.type ? 'pay' : 'earn', // true = pay (chi), false = earn (thu)
+        type: item.type ? 'pay' : 'earn',
         total: item.total,
         description: item.description,
         date: item.date,
@@ -54,15 +64,28 @@ const TransactionPage = () => {
     }
   };
 
-  // Fetch categories from API
+  // Fetch categories from API theo quy ước mới
   const fetchCategories = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/category', {
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error('Không thể lấy danh sách phân loại');
-      const data = await response.json();
-      setCategories(data);
+      // Lấy category hệ thống (account == null)
+      const systemResponse = await fetch('http://localhost:8080/api/category', { credentials: 'include' });
+      if (!systemResponse.ok) throw new Error('Không thể lấy danh sách category hệ thống');
+      const systemData = await systemResponse.json();
+      const systemCategories = systemData.filter((cat) => !cat.account); // Chỉ lấy category có account == null
+
+      // Lấy category của account hiện tại (nếu có accountId)
+      let userCategories = [];
+      if (accountId) {
+        const userResponse = await fetch(`http://localhost:8080/api/category/findbyaccountid?accountId=${accountId}`, {
+          credentials: 'include',
+        });
+        if (!userResponse.ok) throw new Error('Không thể lấy danh sách category của người dùng');
+        userCategories = await userResponse.json();
+      }
+
+      // Kết hợp danh sách: category hệ thống + category của account hiện tại
+      const combinedCategories = [...systemCategories, ...userCategories];
+      setCategories(combinedCategories);
     } catch (err) {
       console.error('Lỗi khi lấy danh sách category:', err.message);
     }
@@ -72,9 +95,7 @@ const TransactionPage = () => {
   const fetchBudgets = async () => {
     if (!accountId) return;
     try {
-      const response = await fetch(`http://localhost:8080/api/budget/findbyaccount?id=${accountId}`, {
-        credentials: 'include',
-      });
+      const response = await fetch(`http://localhost:8080/api/budget/findbyaccount?id=${accountId}`, { credentials: 'include' });
       if (!response.ok) throw new Error('Không thể lấy danh sách ngân sách');
       const data = await response.json();
       setBudgets(data);
@@ -83,39 +104,77 @@ const TransactionPage = () => {
     }
   };
 
-  // Load initial data when user or accountId changes
+  // Load initial data
   useEffect(() => {
     if (user && accountId) {
       setLoading(true);
       Promise.all([fetchTransactions(), fetchCategories(), fetchBudgets()]).finally(() => setLoading(false));
     }
-  }, [user, accountId]);
+  }, [user, accountId, selectedCategory, selectedBudget]);
 
   // Toggle dropdown for each transaction
   const toggleDropdown = (id) => {
     setOpenDropdown(openDropdown === id ? null : id);
   };
 
-  // Handle input changes for create form
-  const handleCreateInputChange = (e) => {
-    const { name, value } = e.target;
-    if (name === 'category' || name === 'budget') {
-      setCreateFormData({ ...createFormData, [name]: { id: value } });
-    } else {
-      setCreateFormData({ ...createFormData, [name]: value });
-    }
-    setFormErrors({ ...formErrors, [name]: '' });
+  // Handle category filter change
+  const handleCategoryFilterChange = (e) => {
+    setSelectedCategory(e.target.value);
   };
 
-  // Handle input changes for edit form
+  // Handle budget filter change
+  const handleBudgetFilterChange = (e) => {
+    setSelectedBudget(e.target.value);
+  };
+
+  // Validate form data
+  const validateForm = (data) => {
+    const errors = {};
+    if (data.type === null || data.type === undefined || data.type === '') {
+      errors.type = 'Type không được để trống';
+    }
+    if (!data.total || data.total <= 0) {
+      errors.total = 'Total phải là số dương';
+    }
+    if (!data.date) {
+      errors.date = 'Date không được để trống';
+    }
+    if (data.method === null || data.method === undefined || data.method === '') {
+      errors.method = 'Method không được để trống';
+    }
+    return errors;
+  };
+
+  // Handle input changes for create form with validation
+  const handleCreateInputChange = (e) => {
+    const { name, value } = e.target;
+    let newValue = value;
+
+    if (name === 'category' || name === 'budget') {
+      newValue = { id: value };
+    }
+
+    const updatedFormData = { ...createFormData, [name]: newValue };
+    setCreateFormData(updatedFormData);
+
+    const errors = validateForm(updatedFormData);
+    setFormErrors(errors);
+  };
+
+  // Handle input changes for edit form with validation
   const handleEditInputChange = (e) => {
     const { name, value } = e.target;
+    let newValue = value;
+
     if (name === 'category' || name === 'budget') {
-      setEditFormData({ ...editFormData, [name]: { id: value } });
-    } else {
-      setEditFormData({ ...editFormData, [name]: value });
+      newValue = { id: value };
     }
-    setFormErrors({ ...formErrors, [name]: '' });
+
+    const updatedFormData = { ...editFormData, [name]: newValue };
+    setEditFormData(updatedFormData);
+
+    const errors = validateForm(updatedFormData);
+    setFormErrors(errors);
   };
 
   // Handle create form submission
@@ -125,6 +184,13 @@ const TransactionPage = () => {
       setFormErrors({ general: 'Vui lòng đăng nhập để tạo giao dịch' });
       return;
     }
+
+    const errors = validateForm(createFormData);
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
     try {
       const payload = {
         type: createFormData.type === 'true' || createFormData.type === true,
@@ -145,8 +211,8 @@ const TransactionPage = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw errorData;
+        setFormErrors({ general: 'Có lỗi xảy ra khi tạo giao dịch' });
+        return;
       }
 
       await fetchTransactions();
@@ -162,15 +228,7 @@ const TransactionPage = () => {
       });
       setFormErrors({});
     } catch (err) {
-      if (err.errors) {
-        const errorMap = {};
-        err.errors.forEach((error) => {
-          errorMap[error.field] = error.defaultMessage;
-        });
-        setFormErrors(errorMap);
-      } else {
-        setFormErrors({ general: 'Có lỗi xảy ra khi tạo giao dịch' });
-      }
+      setFormErrors({ general: 'Có lỗi không xác định khi tạo giao dịch' });
     }
   };
 
@@ -181,9 +239,16 @@ const TransactionPage = () => {
       setFormErrors({ general: 'Dữ liệu không hợp lệ để cập nhật giao dịch' });
       return;
     }
+
+    const errors = validateForm(editFormData);
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
     try {
       const payload = {
-        id: editFormData.id, // Đảm bảo gửi id của deal cũ
+        id: editFormData.id,
         type: editFormData.type === 'true' || editFormData.type === true,
         total: parseInt(editFormData.total, 10),
         description: editFormData.description,
@@ -194,8 +259,6 @@ const TransactionPage = () => {
         budget: editFormData.budget.id ? { id: parseInt(editFormData.budget.id, 10) } : null,
       };
 
-      console.log('Edit payload:', payload); // Debug payload
-
       const response = await fetch(`http://localhost:8080/api/deal/update`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -204,9 +267,8 @@ const TransactionPage = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Edit error response:', errorData);
-        throw new Error('Không thể cập nhật giao dịch');
+        setFormErrors({ general: 'Có lỗi xảy ra khi cập nhật giao dịch' });
+        return;
       }
 
       await fetchTransactions();
@@ -214,15 +276,7 @@ const TransactionPage = () => {
       setEditFormData(null);
       setFormErrors({});
     } catch (err) {
-      if (err.errors) {
-        const errorMap = {};
-        err.errors.forEach((error) => {
-          errorMap[error.field] = error.defaultMessage;
-        });
-        setFormErrors(errorMap);
-      } else {
-        setFormErrors({ general: 'Có lỗi xảy ra khi cập nhật giao dịch: ' + err.message });
-      }
+      setFormErrors({ general: 'Có lỗi không xác định khi cập nhật giao dịch' });
     }
   };
 
@@ -246,7 +300,7 @@ const TransactionPage = () => {
   // Handle edit deal (open edit modal)
   const handleEdit = (deal) => {
     setEditFormData({
-      id: deal.id, // Lưu id để gửi khi cập nhật
+      id: deal.id,
       type: deal.type === 'pay',
       total: deal.total.toString(),
       description: deal.description,
@@ -266,18 +320,16 @@ const TransactionPage = () => {
       if (!deal) throw new Error('Không tìm thấy giao dịch');
 
       const payload = {
-        id: deal.id, // Đảm bảo gửi id của deal cũ
+        id: deal.id,
         type: deal.type === 'pay',
         total: deal.total,
         description: deal.description,
         date: deal.date,
         method: deal.method === 'Bank',
-        category: { id: parseInt(categoryId, 10) }, // Cập nhật category mới
+        category: { id: parseInt(categoryId, 10) },
         account: { id: accountId },
         budget: deal.budget ? { id: deal.budget } : null,
       };
-
-      console.log('Add category payload:', payload);
 
       const response = await fetch(`http://localhost:8080/api/deal/update`, {
         method: 'POST',
@@ -286,11 +338,7 @@ const TransactionPage = () => {
         credentials: 'include',
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Add category error response:', errorData);
-        throw new Error('Không thể cập nhật giao dịch');
-      }
+      if (!response.ok) throw new Error('Không thể cập nhật giao dịch');
 
       await fetchTransactions();
       setOpenDropdown(null);
@@ -307,7 +355,7 @@ const TransactionPage = () => {
       if (!deal) throw new Error('Không tìm thấy giao dịch');
 
       const payload = {
-        id: deal.id, // Đảm bảo gửi id của deal cũ
+        id: deal.id,
         type: deal.type === 'pay',
         total: deal.total,
         description: deal.description,
@@ -315,10 +363,8 @@ const TransactionPage = () => {
         method: deal.method === 'Bank',
         category: deal.category ? { id: deal.category } : null,
         account: { id: accountId },
-        budget: { id: parseInt(budgetId, 10) }, // Cập nhật budget mới
+        budget: { id: parseInt(budgetId, 10) },
       };
-
-      console.log('Add budget payload:', payload);
 
       const response = await fetch(`http://localhost:8080/api/deal/update`, {
         method: 'POST',
@@ -327,11 +373,7 @@ const TransactionPage = () => {
         credentials: 'include',
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Add budget error response:', errorData);
-        throw new Error('Không thể cập nhật giao dịch');
-      }
+      if (!response.ok) throw new Error('Không thể cập nhật giao dịch');
 
       await fetchTransactions();
       setOpenDropdown(null);
@@ -350,18 +392,64 @@ const TransactionPage = () => {
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><p className="text-gray-600 text-lg">Đang tải...</p></div>;
   if (error) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><p className="text-red-600 text-lg">Lỗi: {error}</p></div>;
 
+  // Check if form has errors
+  const hasErrors = (data) => Object.keys(validateForm(data)).length > 0;
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Giao dịch của bạn</h1>
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-5 py-2.5 rounded-full hover:from-blue-600 hover:to-blue-700 transition-all duration-300 shadow-md"
-          >
-            <FaPlus size={16} /> <span className="font-medium">Thêm giao dịch</span>
-          </button>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Phân loại:</label>
+                <select
+                  value={selectedCategory}
+                  onChange={handleCategoryFilterChange}
+                  className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 ease-in-out"
+                >
+                  <option value="">Tất cả</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Ngân sách:</label>
+                <select
+                  value={selectedBudget}
+                  onChange={handleBudgetFilterChange}
+                  className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-500 transition-all duration-200 ease-in-out"
+                >
+                  <option value="">Tất cả</option>
+                  {budgets.map((bud) => (
+                    <option key={bud.id} value={bud.id}>
+                      {bud.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                onClick={() => {
+                  setSelectedCategory('');
+                  setSelectedBudget('');
+                }}
+                className="flex items-center gap-2 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition-all duration-200 text-sm font-medium"
+              >
+                Hiện tất cả
+              </button>
+            </div>
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-5 py-2.5 rounded-full hover:from-blue-600 hover:to-blue-700 transition-all duration-300 shadow-md"
+            >
+              <FaPlus size={16} /> <span className="font-medium">Thêm giao dịch</span>
+            </button>
+          </div>
         </div>
 
         {/* Transaction List */}
@@ -579,7 +667,12 @@ const TransactionPage = () => {
                 {formErrors.general && <p className="text-red-500 text-sm">{formErrors.general}</p>}
                 <button
                   type="submit"
-                  className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition-all duration-300"
+                  disabled={hasErrors(createFormData)}
+                  className={`w-full py-2 rounded-md transition-all duration-300 ${
+                    hasErrors(createFormData)
+                      ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+                      : 'bg-blue-500 text-white hover:bg-blue-600'
+                  }`}
                 >
                   Tạo giao dịch
                 </button>
@@ -697,7 +790,12 @@ const TransactionPage = () => {
                 {formErrors.general && <p className="text-red-500 text-sm">{formErrors.general}</p>}
                 <button
                   type="submit"
-                  className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition-all duration-300"
+                  disabled={hasErrors(editFormData)}
+                  className={`w-full py-2 rounded-md transition-all duration-300 ${
+                    hasErrors(editFormData)
+                      ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+                      : 'bg-blue-500 text-white hover:bg-blue-600'
+                  }`}
                 >
                   Cập nhật giao dịch
                 </button>
