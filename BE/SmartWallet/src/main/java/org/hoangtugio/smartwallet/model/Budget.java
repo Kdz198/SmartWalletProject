@@ -24,7 +24,7 @@ public class Budget {
     private String name;
 
     //1:pay
-    //2:earn
+    //0:earn
     @NotNull(message = "Type không được để trống")
     private boolean type;
 
@@ -37,4 +37,12 @@ public class Budget {
     @ManyToOne
     @JoinColumn(name = "AccountId",nullable = false)
     Account account;
+
+    public Budget(String name, boolean type, long total, int month, Account account) {
+        this.name = name;
+        this.type = type;
+        this.total = total;
+        this.month = month;
+        this.account = account;
+    }
 }

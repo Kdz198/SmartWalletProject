@@ -51,4 +51,14 @@ public class Deal {
     @JoinColumn(name = "BudgetId",nullable = true)
     Budget budget;
 
+    public Deal(boolean type, int total, String description, Date date, boolean method, Category category, Account account, Budget budget) {
+        this.type = type;
+        this.total = total;
+        this.description = description;
+        this.date = date;
+        this.method = method;
+        this.category = category;
+        this.account = account;
+        this.budget = budget;
+    }
 }

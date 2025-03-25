@@ -1,318 +1,463 @@
-import React, { useState, useEffect } from "react";
-import { FaPlus, FaEllipsisH, FaTimes } from "react-icons/fa";
-import { formatCurrency } from "../utils/formatCurrency";
-import { formatDate } from "../utils/formatDate";
+import React, { useState, useEffect } from 'react';
+import { FaPlus, FaEllipsisH, FaTimes } from 'react-icons/fa';
+import { useAuth } from '../context/AuthContext';
 
 const TransactionPage = () => {
+  const { user } = useAuth();
   const [transactions, setTransactions] = useState([]);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [categories, setCategories] = useState([]);
   const [budgets, setBudgets] = useState([]);
-  const [formData, setFormData] = useState({
-    type: true,
-    total: "",
-    description: "",
-    date: new Date().toISOString().split("T")[0], // Default là ngày hiện tại
+  const [createFormData, setCreateFormData] = useState({
+    type: false,
+    total: '',
+    description: '',
+    date: '',
     method: true,
-    category: { id: "" },
-    account: { id: "1" }, // Default account ID là 1
-    budget: { id: "" },
+    category: { id: '' },
+    budget: { id: '' },
   });
+  const [editFormData, setEditFormData] = useState(null);
   const [formErrors, setFormErrors] = useState({});
 
-  // Fetch transactions
+  const accountId = user?.id;
+
+  // Fetch transactions from API based on accountId
   const fetchTransactions = async () => {
-    setLoading(true);
+    if (!accountId) return;
     try {
-      console.log("API Request: GET /api/deal");
-      const response = await fetch("http://localhost:8080/api/deal", {
-        credentials: "include",
+      const response = await fetch(`http://localhost:8080/api/deal/findbyaccount?id=${accountId}`, {
+        credentials: 'include',
       });
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Không thể lấy dữ liệu giao dịch: ${errorText}`);
-      }
+      if (!response.ok) throw new Error('Không thể lấy dữ liệu giao dịch');
       const data = await response.json();
-      console.log("API Response: Transactions fetched successfully", data);
       const formattedData = data.map((item) => ({
         id: item.id,
-        type: item.type ? "earn" : "pay",
+        type: item.type ? 'pay' : 'earn', // true = pay (chi), false = earn (thu)
         total: item.total,
-        description: item.description || "No description",
+        description: item.description,
         date: item.date,
-        method: item.method ? "Bank" : "Cash",
-        account: item.account
-          ? { name: `Account ${item.account.id}` }
-          : { name: "Not specified" },
+        method: item.method ? 'Bank' : 'Cash',
+        account: item.account ? { name: `Tài khoản ${item.account.id}` } : { name: 'Chưa xác định' },
         category: item.category?.id || null,
         budget: item.budget?.id || null,
       }));
       setTransactions(formattedData);
+      setLoading(false);
     } catch (err) {
-      console.error("Fetch Transactions Error:", err.message);
       setError(err.message);
-    } finally {
       setLoading(false);
     }
   };
 
-  // Fetch categories
+  // Fetch categories from API
   const fetchCategories = async () => {
     try {
-      console.log("API Request: GET /api/category");
-      const response = await fetch("http://localhost:8080/api/category", {
-        credentials: "include",
+      const response = await fetch('http://localhost:8080/api/category', {
+        credentials: 'include',
       });
-      if (!response.ok) throw new Error("Không thể lấy danh sách phân loại");
+      if (!response.ok) throw new Error('Không thể lấy danh sách phân loại');
       const data = await response.json();
-      console.log("API Response: Categories fetched successfully", data);
       setCategories(data);
     } catch (err) {
-      console.error("Fetch Categories Error:", err.message);
+      console.error('Lỗi khi lấy danh sách category:', err.message);
     }
   };
 
-  // Fetch budgets
+  // Fetch budgets from API based on accountId
   const fetchBudgets = async () => {
+    if (!accountId) return;
     try {
-      console.log("API Request: GET /api/budget/findbyaccount?id=1");
-      const response = await fetch(
-        "http://localhost:8080/api/budget/findbyaccount?id=1",
-        { credentials: "include" }
-      );
-      if (!response.ok) throw new Error("Không thể lấy danh sách ngân sách");
+      const response = await fetch(`http://localhost:8080/api/budget/findbyaccount?id=${accountId}`, {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Không thể lấy danh sách ngân sách');
       const data = await response.json();
-      console.log("API Response: Budgets fetched successfully", data);
       setBudgets(data);
     } catch (err) {
-      console.error("Fetch Budgets Error:", err.message);
+      console.error('Lỗi khi lấy danh sách budget:', err.message);
     }
   };
 
+  // Load initial data when user or accountId changes
   useEffect(() => {
-    fetchTransactions();
-    fetchCategories();
-    fetchBudgets();
-  }, []);
+    if (user && accountId) {
+      setLoading(true);
+      Promise.all([fetchTransactions(), fetchCategories(), fetchBudgets()]).finally(() => setLoading(false));
+    }
+  }, [user, accountId]);
 
+  // Toggle dropdown for each transaction
   const toggleDropdown = (id) => {
     setOpenDropdown(openDropdown === id ? null : id);
   };
 
-  const handleInputChange = (e) => {
+  // Handle input changes for create form
+  const handleCreateInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]:
-        name === "category" || name === "account" || name === "budget"
-          ? { id: value }
-          : value,
-    }));
-    setFormErrors((prev) => ({ ...prev, [name]: "" }));
+    if (name === 'category' || name === 'budget') {
+      setCreateFormData({ ...createFormData, [name]: { id: value } });
+    } else {
+      setCreateFormData({ ...createFormData, [name]: value });
+    }
+    setFormErrors({ ...formErrors, [name]: '' });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const payload = {
-      type: formData.type === "true" || formData.type === true,
-      total: parseInt(formData.total, 10),
-      description: formData.description || "No description",
-      date: formData.date,
-      method: formData.method === "true" || formData.method === true,
-      category: formData.category.id
-        ? { id: parseInt(formData.category.id, 10) }
-        : null,
-      account: formData.account.id
-        ? { id: parseInt(formData.account.id, 10) }
-        : null,
-      budget: formData.budget.id
-        ? { id: parseInt(formData.budget.id, 10) }
-        : null,
-    };
+  // Handle input changes for edit form
+  const handleEditInputChange = (e) => {
+    const { name, value } = e.target;
+    if (name === 'category' || name === 'budget') {
+      setEditFormData({ ...editFormData, [name]: { id: value } });
+    } else {
+      setEditFormData({ ...editFormData, [name]: value });
+    }
+    setFormErrors({ ...formErrors, [name]: '' });
+  };
 
+  // Handle create form submission
+  const handleCreateSubmit = async (e) => {
+    e.preventDefault();
+    if (!accountId) {
+      setFormErrors({ general: 'Vui lòng đăng nhập để tạo giao dịch' });
+      return;
+    }
     try {
-      console.log("API Request: POST /api/deal/create", payload);
-      const response = await fetch("http://localhost:8080/api/deal/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const payload = {
+        type: createFormData.type === 'true' || createFormData.type === true,
+        total: parseInt(createFormData.total, 10),
+        description: createFormData.description,
+        date: createFormData.date,
+        method: createFormData.method === 'true' || createFormData.method === true,
+        category: createFormData.category.id ? { id: parseInt(createFormData.category.id, 10) } : null,
+        account: { id: accountId },
+        budget: createFormData.budget.id ? { id: parseInt(createFormData.budget.id, 10) } : null,
+      };
+
+      const response = await fetch('http://localhost:8080/api/deal/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-        credentials: "include",
+        credentials: 'include',
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("API Error Response:", errorData);
         throw errorData;
       }
 
-      const result = await response.json();
-      console.log("API Response: Transaction created successfully", result);
       await fetchTransactions();
-      setIsModalOpen(false);
-      setFormData({
-        type: true,
-        total: "",
-        description: "",
-        date: new Date().toISOString().split("T")[0],
+      setIsCreateModalOpen(false);
+      setCreateFormData({
+        type: false,
+        total: '',
+        description: '',
+        date: '',
         method: true,
-        category: { id: "" },
-        account: { id: "1" },
-        budget: { id: "" },
+        category: { id: '' },
+        budget: { id: '' },
       });
       setFormErrors({});
     } catch (err) {
-      console.error("Create Transaction Error:", err);
       if (err.errors) {
         const errorMap = {};
         err.errors.forEach((error) => {
-          errorMap[error.field] = error.defaultMessage; // Giữ nguyên message từ BE bằng tiếng Anh
+          errorMap[error.field] = error.defaultMessage;
         });
         setFormErrors(errorMap);
-        console.log("Validation Errors from BE:", errorMap);
       } else {
-        setFormErrors({
-          general:
-            err.message || "An error occurred while creating the transaction",
-        });
-        console.log("General Error:", err.message);
+        setFormErrors({ general: 'Có lỗi xảy ra khi tạo giao dịch' });
       }
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center">
-        <div className="animate-pulse text-gray-600 text-lg font-medium">
-          Loading data...
-        </div>
-      </div>
-    );
+  // Handle edit form submission
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    if (!accountId || !editFormData.id) {
+      setFormErrors({ general: 'Dữ liệu không hợp lệ để cập nhật giao dịch' });
+      return;
+    }
+    try {
+      const payload = {
+        id: editFormData.id, // Đảm bảo gửi id của deal cũ
+        type: editFormData.type === 'true' || editFormData.type === true,
+        total: parseInt(editFormData.total, 10),
+        description: editFormData.description,
+        date: editFormData.date,
+        method: editFormData.method === 'true' || editFormData.method === true,
+        category: editFormData.category.id ? { id: parseInt(editFormData.category.id, 10) } : null,
+        account: { id: accountId },
+        budget: editFormData.budget.id ? { id: parseInt(editFormData.budget.id, 10) } : null,
+      };
+
+      console.log('Edit payload:', payload); // Debug payload
+
+      const response = await fetch(`http://localhost:8080/api/deal/update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Edit error response:', errorData);
+        throw new Error('Không thể cập nhật giao dịch');
+      }
+
+      await fetchTransactions();
+      setIsEditModalOpen(false);
+      setEditFormData(null);
+      setFormErrors({});
+    } catch (err) {
+      if (err.errors) {
+        const errorMap = {};
+        err.errors.forEach((error) => {
+          errorMap[error.field] = error.defaultMessage;
+        });
+        setFormErrors(errorMap);
+      } else {
+        setFormErrors({ general: 'Có lỗi xảy ra khi cập nhật giao dịch: ' + err.message });
+      }
+    }
+  };
+
+  // Handle delete deal
+  const handleDelete = async (dealId) => {
+    if (!confirm('Bạn có chắc muốn xóa giao dịch này không?')) return;
+    try {
+      const response = await fetch(`http://localhost:8080/api/deal/delete?id=${dealId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Không thể xóa giao dịch');
+      await fetchTransactions();
+      setOpenDropdown(null);
+    } catch (err) {
+      console.error('Lỗi khi xóa giao dịch:', err.message);
+      alert('Có lỗi xảy ra khi xóa giao dịch');
+    }
+  };
+
+  // Handle edit deal (open edit modal)
+  const handleEdit = (deal) => {
+    setEditFormData({
+      id: deal.id, // Lưu id để gửi khi cập nhật
+      type: deal.type === 'pay',
+      total: deal.total.toString(),
+      description: deal.description,
+      date: deal.date,
+      method: deal.method === 'Bank',
+      category: { id: deal.category || '' },
+      budget: { id: deal.budget || '' },
+    });
+    setIsEditModalOpen(true);
+    setOpenDropdown(null);
+  };
+
+  // Handle add category to deal
+  const handleAddCategory = async (dealId, categoryId) => {
+    try {
+      const deal = transactions.find((t) => t.id === dealId);
+      if (!deal) throw new Error('Không tìm thấy giao dịch');
+
+      const payload = {
+        id: deal.id, // Đảm bảo gửi id của deal cũ
+        type: deal.type === 'pay',
+        total: deal.total,
+        description: deal.description,
+        date: deal.date,
+        method: deal.method === 'Bank',
+        category: { id: parseInt(categoryId, 10) }, // Cập nhật category mới
+        account: { id: accountId },
+        budget: deal.budget ? { id: deal.budget } : null,
+      };
+
+      console.log('Add category payload:', payload);
+
+      const response = await fetch(`http://localhost:8080/api/deal/update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Add category error response:', errorData);
+        throw new Error('Không thể cập nhật giao dịch');
+      }
+
+      await fetchTransactions();
+      setOpenDropdown(null);
+    } catch (err) {
+      console.error('Lỗi khi thêm phân loại:', err.message);
+      alert('Có lỗi xảy ra khi thêm phân loại: ' + err.message);
+    }
+  };
+
+  // Handle add budget to deal
+  const handleAddBudget = async (dealId, budgetId) => {
+    try {
+      const deal = transactions.find((t) => t.id === dealId);
+      if (!deal) throw new Error('Không tìm thấy giao dịch');
+
+      const payload = {
+        id: deal.id, // Đảm bảo gửi id của deal cũ
+        type: deal.type === 'pay',
+        total: deal.total,
+        description: deal.description,
+        date: deal.date,
+        method: deal.method === 'Bank',
+        category: deal.category ? { id: deal.category } : null,
+        account: { id: accountId },
+        budget: { id: parseInt(budgetId, 10) }, // Cập nhật budget mới
+      };
+
+      console.log('Add budget payload:', payload);
+
+      const response = await fetch(`http://localhost:8080/api/deal/update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Add budget error response:', errorData);
+        throw new Error('Không thể cập nhật giao dịch');
+      }
+
+      await fetchTransactions();
+      setOpenDropdown(null);
+    } catch (err) {
+      console.error('Lỗi khi thêm vào ngân sách:', err.message);
+      alert('Có lỗi xảy ra khi thêm vào ngân sách: ' + err.message);
+    }
+  };
+
+  // Check if user is not logged in
+  if (!user) {
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><p className="text-gray-600 text-lg">Vui lòng đăng nhập để xem giao dịch.</p></div>;
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center">
-        <div className="bg-red-50 p-6 rounded-lg shadow-md text-red-600 text-lg font-medium">
-          Error: {error}
-        </div>
-      </div>
-    );
-  }
+  // Loading and error states
+  if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><p className="text-gray-600 text-lg">Đang tải...</p></div>;
+  if (error) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><p className="text-red-600 text-lg">Lỗi: {error}</p></div>;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-5xl mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-center mb-10">
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
-            Transaction Management
-          </h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Giao dịch của bạn</h1>
           <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 bg-gradient-to-r from-teal-500 to-cyan-600 text-white px-6 py-3 rounded-full hover:from-teal-600 hover:to-cyan-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+            onClick={() => setIsCreateModalOpen(true)}
+            className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-5 py-2.5 rounded-full hover:from-blue-600 hover:to-blue-700 transition-all duration-300 shadow-md"
           >
-            <FaPlus size={18} />
-            <span className="font-semibold">Add Transaction</span>
+            <FaPlus size={16} /> <span className="font-medium">Thêm giao dịch</span>
           </button>
         </div>
 
         {/* Transaction List */}
-        <div className="space-y-6">
+        <div className="space-y-5">
           {transactions.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-2xl shadow-sm">
-              <p className="text-gray-500 text-lg font-medium">
-                No transactions recorded yet.
-              </p>
-            </div>
+            <p className="text-gray-500 text-center">Chưa có giao dịch nào.</p>
           ) : (
             transactions.map((transaction) => (
               <div
                 key={transaction.id}
-                className="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 flex items-center justify-between group"
+                className="bg-white p-5 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-between border border-gray-100"
               >
-                <div className="flex items-center gap-5">
-                  <div
-                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
-                      transaction.type === "earn"
-                        ? "bg-teal-100"
-                        : "bg-rose-100"
-                    }`}
-                  >
-                    <span
-                      className={`text-xl font-bold ${
-                        transaction.type === "earn"
-                          ? "text-teal-600"
-                          : "text-rose-600"
-                      }`}
-                    >
-                      {transaction.type === "earn" ? "+" : "-"}
+                <div className="flex items-center gap-4">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${transaction.type === 'earn' ? 'bg-green-100' : 'bg-red-100'}`}>
+                    <span className={`text-lg font-semibold ${transaction.type === 'earn' ? 'text-green-600' : 'text-red-600'}`}>
+                      {transaction.type === 'earn' ? '+' : '-'}
                     </span>
                   </div>
                   <div>
-                    <p className="text-xl font-semibold text-gray-800">
-                      {transaction.description}
-                    </p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {formatDate(transaction.date, "en-US")} •{" "}
-                      {transaction.method} •{" "}
-                      <span className="text-gray-600 font-medium">
-                        {transaction.account.name}
-                      </span>
+                    <p className="text-lg font-semibold text-gray-800">{transaction.description}</p>
+                    <p className="text-sm text-gray-500">
+                      {new Date(transaction.date).toLocaleDateString('vi-VN')} • {transaction.method} •{' '}
+                      <span className="text-gray-600 font-medium">{transaction.account.name}</span>
                       {transaction.category && (
-                        <span className="ml-2 text-teal-500 font-medium">
-                          #
-                          {categories.find(
-                            (cat) => cat.id === transaction.category
-                          )?.name || transaction.category}
+                        <span className="ml-2 text-blue-500">
+                          #{categories.find((cat) => cat.id === transaction.category)?.name || transaction.category}
                         </span>
                       )}
                       {transaction.budget && (
-                        <span className="ml-2 text-indigo-500 font-medium">
-                          #
-                          {budgets.find((bud) => bud.id === transaction.budget)
-                            ?.name || transaction.budget}
+                        <span className="ml-2 text-purple-500">
+                          #{budgets.find((bud) => bud.id === transaction.budget)?.name || transaction.budget}
                         </span>
                       )}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-8">
-                  <p
-                    className={`text-xl font-semibold ${
-                      transaction.type === "earn"
-                        ? "text-teal-600"
-                        : "text-rose-600"
-                    }`}
-                  >
-                    {formatCurrency(transaction.total, "VND", "en-US")}
+                <div className="flex items-center gap-6">
+                  <p className={`text-lg font-semibold ${transaction.type === 'earn' ? 'text-green-600' : 'text-red-600'}`}>
+                    {transaction.type === 'earn' ? '+' : ''}{Math.abs(transaction.total).toLocaleString('vi-VN')} VNĐ
                   </p>
                   <div className="relative">
                     <button
                       onClick={() => toggleDropdown(transaction.id)}
                       className="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition-all duration-200"
                     >
-                      <FaEllipsisH size={18} />
+                      <FaEllipsisH size={16} />
                     </button>
                     {openDropdown === transaction.id && (
-                      <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl z-10 border border-gray-100 overflow-hidden">
-                        <ul className="py-2 text-sm text-gray-700">
-                          <li className="px-4 py-2.5 hover:bg-gray-50 cursor-pointer transition-colors duration-150 font-medium">
-                            Edit Transaction
+                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl z-10 border border-gray-100">
+                        <ul className="py-1 text-sm text-gray-700">
+                          <li
+                            onClick={() => handleEdit(transaction)}
+                            className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+                          >
+                            Sửa giao dịch
                           </li>
-                          <li className="px-4 py-2.5 hover:bg-rose-50 cursor-pointer transition-colors duration-150 text-rose-600 font-medium">
-                            Delete Transaction
+                          <li
+                            onClick={() => handleDelete(transaction.id)}
+                            className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150 text-red-600"
+                          >
+                            Xóa
                           </li>
-                          {!transaction.budget && (
-                            <li className="px-4 py-2.5 hover:bg-gray-50 cursor-pointer transition-colors duration-150 font-medium">
-                              Add to Budget
+                          {!transaction.category && (
+                            <li className="relative group">
+                              <span className="block px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
+                                Thêm phân loại
+                              </span>
+                              <ul className="absolute left-full top-0 mt-0 w-48 bg-white rounded-lg shadow-xl border border-gray-100 hidden group-hover:block">
+                                {categories.map((cat) => (
+                                  <li
+                                    key={cat.id}
+                                    onClick={() => handleAddCategory(transaction.id, cat.id)}
+                                    className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+                                  >
+                                    {cat.name}
+                                  </li>
+                                ))}
+                              </ul>
                             </li>
                           )}
-                          {!transaction.category && (
-                            <li className="px-4 py-2.5 hover:bg-gray-50 cursor-pointer transition-colors duration-150 font-medium">
-                              Add Category
+                          {!transaction.budget && (
+                            <li className="relative group">
+                              <span className="block px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
+                                Thêm vào ngân sách
+                              </span>
+                              <ul className="absolute left-full top-0 mt-0 w-48 bg-white rounded-lg shadow-xl border border-gray-100 hidden group-hover:block">
+                                {budgets.map((bud) => (
+                                  <li
+                                    key={bud.id}
+                                    onClick={() => handleAddBudget(transaction.id, bud.id)}
+                                    className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+                                  >
+                                    {bud.name}
+                                  </li>
+                                ))}
+                              </ul>
                             </li>
                           )}
                         </ul>
@@ -325,189 +470,236 @@ const TransactionPage = () => {
           )}
         </div>
 
-        {/* Modal */}
-        {isModalOpen && (
-          <div className="fixed inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center z-50 transition-opacity duration-300">
-            <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto transform transition-all duration-300 scale-100">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  Create New Transaction
-                </h2>
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
-                >
-                  <FaTimes size={24} />
+        {/* Create Modal */}
+        {isCreateModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-md max-h-[70vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-gray-800">Thêm giao dịch mới</h2>
+                <button onClick={() => setIsCreateModalOpen(false)} className="text-gray-500 hover:text-gray-700">
+                  <FaTimes size={20} />
                 </button>
               </div>
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleCreateSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">
-                    Transaction Type
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700">Loại giao dịch</label>
                   <select
                     name="type"
-                    value={formData.type}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 bg-gray-50"
+                    value={createFormData.type}
+                    onChange={handleCreateInputChange}
+                    className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
                   >
-                    <option value={true}>Income</option>
-                    <option value={false}>Expense</option>
+                    <option value={false}>Thu nhập</option>
+                    <option value={true}>Chi tiêu</option>
                   </select>
-                  {formErrors.type && (
-                    <p className="text-rose-500 text-sm mt-1 font-medium">
-                      {formErrors.type}
-                    </p>
-                  )}
+                  {formErrors.type && <p className="text-red-500 text-sm mt-1">{formErrors.type}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">
-                    Amount (VND)
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700">Số tiền (VNĐ)</label>
                   <input
                     type="number"
                     name="total"
-                    value={formData.total}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 bg-gray-50"
+                    value={createFormData.total}
+                    onChange={handleCreateInputChange}
+                    className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
                     required
-                    placeholder="Enter amount"
                   />
-                  {formErrors.total && (
-                    <p className="text-rose-500 text-sm mt-1 font-medium">
-                      {formErrors.total}
-                    </p>
-                  )}
+                  {formErrors.total && <p className="text-red-500 text-sm mt-1">{formErrors.total}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">
-                    Description
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700">Mô tả</label>
                   <input
                     type="text"
                     name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 bg-gray-50"
-                    placeholder="e.g., Shopping, Monthly Salary"
+                    value={createFormData.description}
+                    onChange={handleCreateInputChange}
+                    className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
                   />
-                  {formErrors.description && (
-                    <p className="text-rose-500 text-sm mt-1 font-medium">
-                      {formErrors.description}
-                    </p>
-                  )}
+                  {formErrors.description && <p className="text-red-500 text-sm mt-1">{formErrors.description}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">
-                    Date
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700">Ngày</label>
                   <input
                     type="date"
                     name="date"
-                    value={formData.date}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 bg-gray-50"
+                    value={createFormData.date}
+                    onChange={handleCreateInputChange}
+                    className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
                     required
                   />
-                  {formErrors.date && (
-                    <p className="text-rose-500 text-sm mt-1 font-medium">
-                      {formErrors.date}
-                    </p>
-                  )}
+                  {formErrors.date && <p className="text-red-500 text-sm mt-1">{formErrors.date}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">
-                    Payment Method
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700">Phương thức</label>
                   <select
                     name="method"
-                    value={formData.method}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 bg-gray-50"
+                    value={createFormData.method}
+                    onChange={handleCreateInputChange}
+                    className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
                   >
-                    <option value={true}>Bank</option>
-                    <option value={false}>Cash</option>
+                    <option value={true}>Ngân hàng</option>
+                    <option value={false}>Tiền mặt</option>
                   </select>
-                  {formErrors.method && (
-                    <p className="text-rose-500 text-sm mt-1 font-medium">
-                      {formErrors.method}
-                    </p>
-                  )}
+                  {formErrors.method && <p className="text-red-500 text-sm mt-1">{formErrors.method}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">
-                    Category
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700">Phân loại (tuỳ chọn)</label>
                   <select
                     name="category"
-                    value={formData.category.id || ""}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 bg-gray-50"
+                    value={createFormData.category.id || ''}
+                    onChange={handleCreateInputChange}
+                    className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
                   >
-                    <option value="">No category</option>
+                    <option value="">-- Chọn phân loại --</option>
                     {categories.map((cat) => (
                       <option key={cat.id} value={cat.id}>
                         {cat.name}
                       </option>
                     ))}
                   </select>
-                  {formErrors.category && (
-                    <p className="text-rose-500 text-sm mt-1 font-medium">
-                      {formErrors.category}
-                    </p>
-                  )}
+                  {formErrors.category && <p className="text-red-500 text-sm mt-1">{formErrors.category}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">
-                    Account
-                  </label>
-                  <input
-                    type="number"
-                    name="account"
-                    value={formData.account.id}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 bg-gray-50"
-                    placeholder="Enter account ID"
-                  />
-                  {formErrors.account && (
-                    <p className="text-rose-500 text-sm mt-1 font-medium">
-                      {formErrors.account}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">
-                    Budget
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700">Ngân sách (tuỳ chọn)</label>
                   <select
                     name="budget"
-                    value={formData.budget.id || ""}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 bg-gray-50"
+                    value={createFormData.budget.id || ''}
+                    onChange={handleCreateInputChange}
+                    className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
                   >
-                    <option value="">No budget selected</option>
+                    <option value="">-- Chọn ngân sách --</option>
                     {budgets.map((bud) => (
                       <option key={bud.id} value={bud.id}>
                         {bud.name}
                       </option>
                     ))}
                   </select>
-                  {formErrors.budget && (
-                    <p className="text-rose-500 text-sm mt-1 font-medium">
-                      {formErrors.budget}
-                    </p>
-                  )}
+                  {formErrors.budget && <p className="text-red-500 text-sm mt-1">{formErrors.budget}</p>}
                 </div>
-                {formErrors.general && (
-                  <div className="bg-rose-50 p-3 rounded-lg text-rose-600 text-sm font-medium">
-                    {formErrors.general}
-                  </div>
-                )}
+                {formErrors.general && <p className="text-red-500 text-sm">{formErrors.general}</p>}
                 <button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 text-white py-3 rounded-lg hover:from-teal-600 hover:to-cyan-700 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1 font-semibold"
+                  className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition-all duration-300"
                 >
-                  Create Transaction
+                  Tạo giao dịch
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Modal */}
+        {isEditModalOpen && editFormData && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-md max-h-[70vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-gray-800">Sửa giao dịch</h2>
+                <button onClick={() => setIsEditModalOpen(false)} className="text-gray-500 hover:text-gray-700">
+                  <FaTimes size={20} />
+                </button>
+              </div>
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Loại giao dịch</label>
+                  <select
+                    name="type"
+                    value={editFormData.type}
+                    onChange={handleEditInputChange}
+                    className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                  >
+                    <option value={false}>Thu nhập</option>
+                    <option value={true}>Chi tiêu</option>
+                  </select>
+                  {formErrors.type && <p className="text-red-500 text-sm mt-1">{formErrors.type}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Số tiền (VNĐ)</label>
+                  <input
+                    type="number"
+                    name="total"
+                    value={editFormData.total}
+                    onChange={handleEditInputChange}
+                    className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                    required
+                  />
+                  {formErrors.total && <p className="text-red-500 text-sm mt-1">{formErrors.total}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Mô tả</label>
+                  <input
+                    type="text"
+                    name="description"
+                    value={editFormData.description}
+                    onChange={handleEditInputChange}
+                    className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                  />
+                  {formErrors.description && <p className="text-red-500 text-sm mt-1">{formErrors.description}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Ngày</label>
+                  <input
+                    type="date"
+                    name="date"
+                    value={editFormData.date}
+                    onChange={handleEditInputChange}
+                    className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                    required
+                  />
+                  {formErrors.date && <p className="text-red-500 text-sm mt-1">{formErrors.date}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Phương thức</label>
+                  <select
+                    name="method"
+                    value={editFormData.method}
+                    onChange={handleEditInputChange}
+                    className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                  >
+                    <option value={true}>Ngân hàng</option>
+                    <option value={false}>Tiền mặt</option>
+                  </select>
+                  {formErrors.method && <p className="text-red-500 text-sm mt-1">{formErrors.method}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Phân loại (tuỳ chọn)</label>
+                  <select
+                    name="category"
+                    value={editFormData.category.id || ''}
+                    onChange={handleEditInputChange}
+                    className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                  >
+                    <option value="">-- Chọn phân loại --</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                  {formErrors.category && <p className="text-red-500 text-sm mt-1">{formErrors.category}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Ngân sách (tuỳ chọn)</label>
+                  <select
+                    name="budget"
+                    value={editFormData.budget.id || ''}
+                    onChange={handleEditInputChange}
+                    className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                  >
+                    <option value="">-- Chọn ngân sách --</option>
+                    {budgets.map((bud) => (
+                      <option key={bud.id} value={bud.id}>
+                        {bud.name}
+                      </option>
+                    ))}
+                  </select>
+                  {formErrors.budget && <p className="text-red-500 text-sm mt-1">{formErrors.budget}</p>}
+                </div>
+                {formErrors.general && <p className="text-red-500 text-sm">{formErrors.general}</p>}
+                <button
+                  type="submit"
+                  className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition-all duration-300"
+                >
+                  Cập nhật giao dịch
                 </button>
               </form>
             </div>

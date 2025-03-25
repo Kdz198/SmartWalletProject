@@ -63,11 +63,13 @@ public class DealService {
             throw new CustomException("Deal không tồn tại !!", HttpStatus.CONFLICT);
         }
         Deal saved = dealRepository.save(deal);
-        Budget budget = budgetService.getBudgetById(saved.getBudget().getId());
-        if(budget.getTotal()<= caculateActualTotalInBudget(deal.getBudget().getId(),deal.getAccount().getId())){
+        if(deal.getBudget()!=null) {
+            Budget budget = budgetService.getBudgetById(saved.getBudget().getId());
+            if (budget.getTotal() <= caculateActualTotalInBudget(deal.getBudget().getId(), deal.getAccount().getId())) {
 
-            int money = (int) (caculateActualTotalInBudget(deal.getBudget().getId(),deal.getAccount().getId()) - budget.getTotal());
-            notificationService.save(saved.getAccount(),money);
+                int money = (int) (caculateActualTotalInBudget(deal.getBudget().getId(), deal.getAccount().getId()) - budget.getTotal());
+                notificationService.save(saved.getAccount(), money);
+            }
         }
         return saved;
     }
