@@ -56,7 +56,9 @@ const BudgetPage = () => {
         throw new Error(errorData.message || "Không thể lấy dữ liệu ngân sách");
       }
       const budgetData = await budgetResponse.json();
-      console.log("API Response Success: Budgets fetched", budgetData);
+      // Đảo ngược budgetData để ngân sách mới nhất lên đầu
+      const reversedBudgetData = budgetData.slice().reverse();
+      console.log("API Response Success: Budgets fetched", reversedBudgetData);
 
       console.log(`API Request: GET /api/deal/findbyaccount?id=${accountId}`);
       const dealResponse = await fetch(
@@ -69,10 +71,12 @@ const BudgetPage = () => {
         throw new Error(errorData.message || "Không thể lấy dữ liệu giao dịch");
       }
       const dealData = await dealResponse.json();
-      console.log("API Response Success: Deals fetched", dealData);
+      // Đảo ngược dealData để giao dịch mới nhất lên đầu
+      const reversedDealData = dealData.slice().reverse();
+      console.log("API Response Success: Deals fetched", reversedDealData);
 
-      const formattedBudgets = budgetData.map((budget) => {
-        const relatedDeals = dealData.filter(
+      const formattedBudgets = reversedBudgetData.map((budget) => {
+        const relatedDeals = reversedDealData.filter(
           (deal) => deal.budget?.id === budget.id
         );
         const spent = relatedDeals.reduce((sum, deal) => sum + deal.total, 0);
@@ -87,7 +91,7 @@ const BudgetPage = () => {
       });
 
       setBudgets(formattedBudgets);
-      setDeals(dealData);
+      setDeals(reversedDealData);
       applyFilter(formattedBudgets, selectedType, selectedMonth);
       setLoading(false);
     } catch (err) {

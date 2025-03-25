@@ -47,8 +47,11 @@ const CategoryPage = () => {
       const allCategories = await allCategoriesResponse.json();
       console.log("API Response Success: Categories fetched", allCategories);
 
-      const systemCats = allCategories.filter((cat) => !cat.account);
-      const userCats = allCategories.filter(
+      // Đảo ngược thứ tự danh sách để dữ liệu mới nhất (cuối mảng) lên đầu
+      const reversedCategories = allCategories.slice().reverse();
+
+      const systemCats = reversedCategories.filter((cat) => !cat.account);
+      const userCats = reversedCategories.filter(
         (cat) => cat.account && cat.account.id === accountId
       );
 
@@ -73,7 +76,7 @@ const CategoryPage = () => {
         }
         const dealData = await dealResponse.json();
         console.log("API Response Success: Deals fetched", dealData);
-        setDeals(dealData);
+        setDeals(dealData); // Deals có cần đảo ngược không tùy thuộc vào yêu cầu
       } else {
         setDeals([]);
       }
@@ -91,26 +94,23 @@ const CategoryPage = () => {
     fetchData();
   }, [user, accountId]);
 
-  // Toggle dropdown for each category
+  // Các hàm khác giữ nguyên, không thay đổi
   const toggleDropdown = (id) => {
     setOpenDropdown(openDropdown === id ? null : id);
   };
 
-  // Handle input changes for create form
   const handleCreateInputChange = (e) => {
     const { name, value } = e.target;
     setCreateFormData({ ...createFormData, [name]: value });
     setFormErrors({ ...formErrors, [name]: "" });
   };
 
-  // Handle input changes for edit form
   const handleEditInputChange = (e) => {
     const { name, value } = e.target;
     setEditFormData({ ...editFormData, [name]: value });
     setFormErrors({ ...formErrors, [name]: "" });
   };
 
-  // Handle create form submission
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
     if (!accountId) {
@@ -167,7 +167,6 @@ const CategoryPage = () => {
     }
   };
 
-  // Handle edit form submission
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!accountId || !editFormData?.id) {
@@ -223,8 +222,6 @@ const CategoryPage = () => {
     }
   };
 
-  // Handle delete category
-  // Handle delete category
   const handleDelete = (categoryId) => {
     const category = userCategories.find((cat) => cat.id === categoryId);
     if (!category || !category.account) {
@@ -233,12 +230,10 @@ const CategoryPage = () => {
       return;
     }
 
-    // Mở modal xác nhận và lưu category cần xóa
     setCategoryToDelete(categoryId);
     setIsDeleteModalOpen(true);
   };
 
-  // Hàm xác nhận xóa
   const confirmDelete = async () => {
     if (!categoryToDelete) return;
 
@@ -265,16 +260,14 @@ const CategoryPage = () => {
       setOpenDropdown(null);
       setIsDeleteModalOpen(false);
       setCategoryToDelete(null);
-      // Hiển thị toast
       setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000); // Ẩn toast sau 3 giây
+      setTimeout(() => setShowToast(false), 3000);
     } catch (err) {
       console.error("Lỗi khi xóa danh mục:", err.message);
       alert("Có lỗi xảy ra khi xóa danh mục: " + err.message);
     }
   };
 
-  // Handle edit category (open edit modal)
   const handleEdit = (category) => {
     setEditFormData({
       id: category.id,
@@ -285,18 +278,15 @@ const CategoryPage = () => {
     setOpenDropdown(null);
   };
 
-  // Handle category click to show deals in modal
   const handleCategoryClick = (category) => {
     setSelectedCategory(category);
     setIsDealsModalOpen(true);
   };
 
-  // Filter deals by selected category
   const filteredDeals = selectedCategory
     ? deals.filter((deal) => deal.category?.id === selectedCategory.id)
     : [];
 
-  // Check if user is not logged in
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-100 to-blue-200 flex items-center justify-center">
@@ -307,7 +297,6 @@ const CategoryPage = () => {
     );
   }
 
-  // Loading and error states
   if (loading)
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-100 to-blue-200 flex items-center justify-center">
@@ -324,7 +313,6 @@ const CategoryPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-blue-200 p-10">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
         <div className="flex justify-between items-center mb-10">
           <h1 className="text-4xl font-extrabold text-gray-900 flex items-center space-x-2">
             <span>Danh mục tài chính</span>
@@ -338,7 +326,6 @@ const CategoryPage = () => {
             <span className="font-semibold">Tạo danh mục mới</span>
           </button>
         </div>
-        {/* Delete Confirmation Modal */}
         {isDeleteModalOpen && (
           <div className="fixed inset-0 backdrop-blur-xl bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-100">
@@ -369,7 +356,6 @@ const CategoryPage = () => {
           </div>
         )}
 
-        {/* Toast Notification */}
         {showToast && (
           <div className="fixed bottom-4 right-4 z-50">
             <div className="bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-fade-in">
@@ -377,7 +363,6 @@ const CategoryPage = () => {
             </div>
           </div>
         )}
-        {/* System Categories */}
         <div className="mb-12">
           <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center space-x-2">
             <FaTags className="text-indigo-500" />
@@ -408,7 +393,6 @@ const CategoryPage = () => {
           </div>
         </div>
 
-        {/* User Categories */}
         <div>
           <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center space-x-2">
             <FaTags className="text-purple-500" />
@@ -442,7 +426,6 @@ const CategoryPage = () => {
                         <p className="text-sm text-gray-500">Người dùng</p>
                       </div>
                     </div>
-                    {/* Thay thế nút ba chấm bằng 2 nút icon */}
                     <div className="flex flex-col gap-2">
                       <button
                         onClick={() => handleEdit(category)}
@@ -450,7 +433,7 @@ const CategoryPage = () => {
                         title="Sửa danh mục"
                       >
                         <svg
-                          className="w-[25px] h-[25px]" // Tăng từ w-5 h-5 lên w-[25px] h-[25px]
+                          className="w-[25px] h-[25px]"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -470,7 +453,7 @@ const CategoryPage = () => {
                         title="Xóa danh mục"
                       >
                         <svg
-                          className="w-[25px] h-[25px]" // Tăng từ w-5 h-5 lên w-[25px] h-[25px]
+                          className="w-[25px] h-[25px]"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -492,7 +475,6 @@ const CategoryPage = () => {
           </div>
         </div>
 
-        {/* Create Modal */}
         {isCreateModalOpen && (
           <div className="fixed inset-0 backdrop-blur bg-black bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md max-h-[70vh] overflow-y-auto transform transition-all duration-300 scale-100">
@@ -558,7 +540,6 @@ const CategoryPage = () => {
           </div>
         )}
 
-        {/* Edit Modal */}
         {isEditModalOpen && editFormData && (
           <div className="fixed inset-0  backdrop-blur-xl bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md max-h-[70vh] overflow-y-auto transform transition-all duration-300 scale-100">
@@ -624,7 +605,6 @@ const CategoryPage = () => {
           </div>
         )}
 
-        {/* Deals Modal */}
         {isDealsModalOpen && selectedCategory && (
           <div className="fixed inset-0 backdrop-blur bg-black bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-y-auto transform transition-all duration-300 scale-100">
