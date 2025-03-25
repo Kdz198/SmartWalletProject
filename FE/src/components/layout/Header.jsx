@@ -5,7 +5,8 @@ import { useAuth } from "../../context/AuthContext";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
-  FaHome,
+  FaHome, // Icon cho Trang chủ
+  FaChartBar, // Icon cho Tổng quan
   FaExchangeAlt,
   FaChartPie,
   FaTags,
@@ -83,7 +84,10 @@ const Header = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex-shrink-0">
-            <Link to="/" className="text-3xl font-bold text-white">
+            <Link
+              to={isLoggedIn ? "/dashboard" : "/"}
+              className="text-3xl font-bold text-white"
+            >
               FinancePro
             </Link>
           </div>
@@ -91,11 +95,11 @@ const Header = () => {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
             <Link
-              to="/"
+              to={isLoggedIn ? "/dashboard" : "/"}
               className="flex items-center space-x-2 text-white hover:text-yellow-300 transition-all duration-300 ease-in-out font-medium"
             >
-              <FaHome />
-              <span>Trang chủ</span>
+              {isLoggedIn ? <FaChartBar /> : <FaHome />}
+              <span>{isLoggedIn ? "Tổng quan" : "Trang chủ"}</span>
             </Link>
             {isLoggedIn && (
               <>
@@ -153,7 +157,7 @@ const Header = () => {
                 <Button
                   variant="outline"
                   size="small"
-                  className=" border-white hover:bg-white/20 hover:text-yellow-300 transition-all duration-300 ease-in-out rounded-md flex items-center space-x-2"
+                  className="border-white hover:bg-white/20 hover:text-yellow-300 transition-all duration-300 ease-in-out rounded-md flex items-center space-x-2"
                   onClick={handleLogout}
                 >
                   <FaSignOutAlt />
@@ -172,7 +176,7 @@ const Header = () => {
                   <Button
                     variant="outline"
                     fullWidth
-                    className=" border-white hover:bg-white/20 hover:text-yellow-300 transition-all duration-300 ease-in-out rounded-md flex items-center space-x-2"
+                    className="border-white hover:bg-white/20 hover:text-yellow-300 transition-all duration-300 ease-in-out rounded-md flex items-center space-x-2"
                   >
                     <FaUserPlus />
                     <span>Đăng ký</span>
@@ -233,11 +237,11 @@ const Header = () => {
       >
         <div className="px-4 pt-3 pb-4 space-y-2">
           <Link
-            to="/"
+            to={isLoggedIn ? "/dashboard" : "/"}
             className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-md transition-all duration-300 ease-in-out"
           >
-            <FaHome />
-            <span>Trang chủ</span>
+            {isLoggedIn ? <FaChartBar /> : <FaHome />}
+            <span>{isLoggedIn ? "Tổng quan" : "Trang chủ"}</span>
           </Link>
           {isLoggedIn && (
             <>
