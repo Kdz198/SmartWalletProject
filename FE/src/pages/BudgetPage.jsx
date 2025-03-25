@@ -6,14 +6,16 @@ const BudgetPage = () => {
   const { user } = useAuth();
   const [budgets, setBudgets] = useState([]);
   const [filteredBudgets, setFilteredBudgets] = useState([]);
-  const [deals, setDeals] = useState([]); // Danh sách deals để lọc deal chưa có budget
+  const [deals, setDeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAddDealModalOpen, setIsAddDealModalOpen] = useState(false); // Modal mới
+  const [selectedBudgetId, setSelectedBudgetId] = useState(null); // Budget đang chọn để thêm deal
   const [openDropdown, setOpenDropdown] = useState(null);
   const [selectedType, setSelectedType] = useState('');
-  const [selectedMonth, setSelectedMonth] = useState(''); // Bộ lọc tháng
+  const [selectedMonth, setSelectedMonth] = useState('');
   const [createFormData, setCreateFormData] = useState({
     name: '',
     type: false,
@@ -30,14 +32,12 @@ const BudgetPage = () => {
     if (!accountId) return;
     setLoading(true);
     try {
-      // Fetch budgets
       const budgetResponse = await fetch(`http://localhost:8080/api/budget/findbyaccount?id=${accountId}`, {
         credentials: 'include',
       });
       if (!budgetResponse.ok) throw new Error('Không thể lấy dữ liệu ngân sách');
       const budgetData = await budgetResponse.json();
 
-      // Fetch all deals for the account
       const dealResponse = await fetch(`http://localhost:8080/api/deal/findbyaccount?id=${accountId}`, {
         credentials: 'include',
       });
@@ -58,7 +58,7 @@ const BudgetPage = () => {
       });
 
       setBudgets(formattedBudgets);
-      setDeals(dealData); // Lưu danh sách deals
+      setDeals(dealData);
       applyFilter(formattedBudgets, selectedType, selectedMonth);
       setLoading(false);
     } catch (err) {
@@ -245,6 +245,13 @@ const BudgetPage = () => {
     setOpenDropdown(null);
   };
 
+  // Open modal to add deal to budget
+  const handleOpenAddDealModal = (budgetId) => {
+    setSelectedBudgetId(budgetId);
+    setIsAddDealModalOpen(true);
+    setOpenDropdown(null);
+  };
+
   // Handle add deal to budget
   const handleAddDealToBudget = async (dealId, budgetId) => {
     try {
@@ -276,7 +283,7 @@ const BudgetPage = () => {
       }
 
       await fetchBudgetsAndDeals();
-      setOpenDropdown(null);
+      setIsAddDealModalOpen(false);
     } catch (err) {
       console.error('Lỗi khi thêm deal vào ngân sách:', err.message);
       alert('Có lỗi xảy ra khi thêm deal vào ngân sách');
@@ -299,7 +306,6 @@ const BudgetPage = () => {
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Ngân sách của bạn</h1>
           <div className="flex items-center gap-6">
-            {/* Filter Section */}
             <div className="flex items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
               <div className="flex items-center gap-2">
                 <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Loại:</label>
@@ -355,7 +361,7 @@ const BudgetPage = () => {
           ) : (
             filteredBudgets.map((budget) => {
               const spentPercentage = budget.total > 0 ? (budget.spent / budget.total) * 100 : 0;
-              const availableDeals = deals.filter((deal) => !deal.budget); // Lọc deal chưa có budget
+              const availableDeals = deals.filter((deal) => !deal.budget);
               return (
                 <div
                   key={budget.id}
@@ -421,21 +427,11 @@ const BudgetPage = () => {
                               Xóa
                             </li>
                             {availableDeals.length > 0 && (
-                              <li className="relative group">
-                                <span className="block px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
-                                  Thêm deal vào ngân sách
-                                </span>
-                                <ul className="absolute left-full top-0 mt-0 w-48 bg-white rounded-lg shadow-xl border border-gray-100 hidden group-hover:block">
-                                  {availableDeals.map((deal) => (
-                                    <li
-                                      key={deal.id}
-                                      onClick={() => handleAddDealToBudget(deal.id, budget.id)}
-                                      className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150"
-                                    >
-                                      {deal.description} ({deal.total.toLocaleString('vi-VN')} VNĐ)
-                                    </li>
-                                  ))}
-                                </ul>
+                              <li
+                                onClick={() => handleOpenAddDealModal(budget.id)}
+                                className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+                              >
+                                Thêm deal vào ngân sách
                               </li>
                             )}
                           </ul>
@@ -593,6 +589,50 @@ const BudgetPage = () => {
                   Cập nhật ngân sách
                 </button>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Add Deal Modal */}
+        {isAddDealModalOpen && selectedBudgetId && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-lg max-h-[70vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-gray-800">Chọn giao dịch để thêm vào ngân sách</h2>
+                <button onClick={() => setIsAddDealModalOpen(false)} className="text-gray-500 hover:text-gray-700">
+                  <FaTimes size={20} />
+                </button>
+              </div>
+              <div className="space-y-3">
+                {deals.filter((deal) => !deal.budget).length === 0 ? (
+                  <p className="text-gray-500 text-center">Không có giao dịch nào để thêm.</p>
+                ) : (
+                  deals
+                    .filter((deal) => !deal.budget)
+                    .map((deal) => (
+                      <div
+                        key={deal.id}
+                        onClick={() => handleAddDealToBudget(deal.id, selectedBudgetId)}
+                        className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-all duration-200 flex justify-between items-center"
+                      >
+                        <div>
+                          <p className="text-gray-800 font-medium">{deal.description}</p>
+                          <p className="text-sm text-gray-500">
+                            {new Date(deal.date).toLocaleDateString('vi-VN')}
+                          </p>
+                        </div>
+                        <p
+                          className={`text-lg font-semibold ${
+                            deal.type ? 'text-red-600' : 'text-green-600'
+                          }`}
+                        >
+                          {deal.type ? '-' : '+'}
+                          {deal.total.toLocaleString('vi-VN')} VNĐ
+                        </p>
+                      </div>
+                    ))
+                )}
+              </div>
             </div>
           </div>
         )}
