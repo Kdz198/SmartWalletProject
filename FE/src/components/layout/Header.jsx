@@ -88,6 +88,13 @@ const Header = () => {
     fetchAccountData();
     fetchNotifications();
     setIsLoggedIn(!!user);
+
+    const intervalId = setInterval(() => {
+      fetchNotifications();
+    }, 10000); // 10 giây = 10,000ms
+
+    // Cleanup interval khi component unmount hoặc user thay đổi
+    return () => clearInterval(intervalId);
   }, [user]);
 
   useEffect(() => {

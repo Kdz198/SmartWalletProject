@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import {
   FaPlus,
-  FaTrash,
+  FaEllipsisH,
   FaTimes,
   FaArrowUp,
   FaArrowDown,
-  FaEdit,
+  FaExchangeAlt,
   FaCheck,
 } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
@@ -649,9 +649,9 @@ const TransactionPage = () => {
                 className="flex items-center gap-2 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition-all duration-200"
               >
                 {sortOrder === "desc" ? (
-                  <FaArrowDown size={16} />
-                ) : (
                   <FaArrowUp size={16} />
+                ) : (
+                  <FaArrowDown size={16} />
                 )}
               </button>
             </div>
@@ -673,7 +673,7 @@ const TransactionPage = () => {
             currentTransactions.map((transaction) => (
               <div
                 key={transaction.id}
-                className="bg-white p-5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-between border border-gray-100 transform hover:scale-105"
+                className="bg-white p-5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-between border border-gray-100 transform hover:scale-105 hover:z-10 relative" // Thêm hover:z-10
               >
                 <div className="flex items-center gap-4">
                   <div
@@ -732,27 +732,58 @@ const TransactionPage = () => {
                     {transaction.type === "earn" ? "+" : ""}
                     {Math.abs(transaction.total).toLocaleString("vi-VN")} VNĐ
                   </p>
-                  <div className="flex items-center gap-2">
+                  <div className="relative">
                     <button
-                      onClick={() => handleEdit(transaction)}
-                      className="text-blue-500 hover:text-blue-700 p-2 rounded-full hover:bg-blue-100 transition-all duration-200"
-                      title="Sửa giao dịch"
+                      onClick={() => toggleDropdown(transaction.id)}
+                      className="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100 transition-all duration-200 z-20" // Thêm z-20 cho nút
                     >
-                      <FaEdit size={25} />
+                      <FaEllipsisH size={16} />
                     </button>
-                    <button
-                      onClick={() => handleConfirmDelete(transaction.id)}
-                      className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-100 transition-all duration-200"
-                      title="Xóa giao dịch"
-                    >
-                      <FaTrash size={22} />
-                    </button>
+                    {openDropdown === transaction.id && (
+                      <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-xl z-50 border border-gray-100">
+                        {" "}
+                        {/* Tăng z-50 và thêm top-full */}
+                        <ul className="py-1 text-sm text-gray-700">
+                          <li
+                            onClick={() => handleEdit(transaction)}
+                            className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+                          >
+                            Sửa giao dịch
+                          </li>
+                          <li
+                            onClick={() => handleConfirmDelete(transaction.id)}
+                            className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150 text-red-600"
+                          >
+                            Xóa
+                          </li>
+                          {!transaction.category && (
+                            <li
+                              onClick={() =>
+                                openAddCategoryModal(transaction.id)
+                              }
+                              className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+                            >
+                              Thêm phân loại
+                            </li>
+                          )}
+                          {!transaction.budget && (
+                            <li
+                              onClick={() => openAddBudgetModal(transaction.id)}
+                              className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+                            >
+                              Thêm ngân sách
+                            </li>
+                          )}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             ))
           )}
         </div>
+
         {totalPages > 1 && (
           <div className="mt-6 flex justify-center gap-2">
             {[...Array(totalPages)].map((_, index) => (
@@ -773,7 +804,7 @@ const TransactionPage = () => {
 
         {/* Create Modal */}
         {isCreateModalOpen && (
-          <div className="fixed inset-0 backdrop-blur bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md max-h-[70vh] overflow-y-auto transform transition-all duration-300 scale-100">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -930,7 +961,7 @@ const TransactionPage = () => {
 
         {/* Edit Modal */}
         {isEditModalOpen && editFormData && (
-          <div className="fixed inset-0 backdrop-blur bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md max-h-[70vh] overflow-y-auto transform transition-all duration-300 scale-100">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -1087,7 +1118,7 @@ const TransactionPage = () => {
 
         {/* Add Category Modal */}
         {isAddCategoryModalOpen && selectedDealId && (
-          <div className="fixed inset-0 backdrop-blur bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md max-h-[70vh] overflow-y-auto transform transition-all duration-300 scale-100">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -1123,7 +1154,7 @@ const TransactionPage = () => {
 
         {/* Add Budget Modal */}
         {isAddBudgetModalOpen && selectedDealId && (
-          <div className="fixed inset-0 backdrop-blur bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md max-h-[70vh] overflow-y-auto transform transition-all duration-300 scale-100">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -1159,7 +1190,7 @@ const TransactionPage = () => {
 
         {/* Delete Confirmation Modal */}
         {isDeleteModalOpen && (
-          <div className="fixed inset-0 backdrop-blur bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-100">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">
