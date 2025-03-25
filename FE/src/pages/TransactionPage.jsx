@@ -566,10 +566,6 @@ const TransactionPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-blue-200 p-8">
       <div className="max-w-5xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-extrabold text-gray-900 flex items-center space-x-2">
-            <FaExchangeAlt className="text-blue-600" />
-            <span>Giao dịch của bạn</span>
-          </h1>
           <div className="flex items-center gap-6">
             <div className="flex flex-wrap items-center gap-4 bg-white p-4 rounded-xl shadow-lg border border-gray-100">
               <div className="flex items-center gap-2 min-w-[200px]">

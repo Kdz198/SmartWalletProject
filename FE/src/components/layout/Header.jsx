@@ -169,7 +169,7 @@ const Header = () => {
               to={isLoggedIn ? "/dashboard" : "/"}
               className="text-3xl font-bold text-white"
             >
-              FinancePro
+              Hoàng Tử Gió
             </Link>
           </div>
 

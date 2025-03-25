@@ -20,7 +20,7 @@ const Footer = () => {
           {/* Logo & Description */}
           <div className="space-y-8 xl:col-span-1">
             <Link to="/" className="text-2xl font-bold text-yellow-300">
-              FinancePro
+             Team Ếch FPT
             </Link>
             <p className="text-gray-200 text-base">
               Quản lý tài chính cá nhân đơn giản và hiệu quả cho mọi người.
@@ -212,7 +212,7 @@ const Footer = () => {
         </div>
         <div className="mt-12 border-t border-white/20 pt-8">
           <p className="text-base text-gray-200 xl:text-center">
-            © {currentYear} FinancePro. Mọi quyền được bảo lưu.
+            © {currentYear} copyright by Team Ếch FPT
           </p>
         </div>
       </div>

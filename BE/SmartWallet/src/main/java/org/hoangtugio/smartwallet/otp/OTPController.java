@@ -21,6 +21,8 @@ public class OTPController {
     AccountRepository accountRepository;
     @Autowired
     EmailService emailService;
+    @Autowired
+    OTPRepository otpRepository;
 
     @PostMapping("/send")
     public String sendOtp(@RequestParam String email) {
@@ -47,6 +49,21 @@ public class OTPController {
 
         boolean isValid = otpService.verifyOTP(account.getEmail(), otp);
         return isValid ? "OTP verified successfully" : "Invalid or expired OTP";
+    }
+
+    @PostMapping("/reset-password")
+    public String resetPassword(@RequestParam String email,@RequestParam String otp, @RequestParam String newPassword) {
+        Account account = accountRepository.findByEmail(email);
+        if (account == null) {
+            return "Invalid email";
+        }
+        Optional<OTP> otpreal = otpRepository.findTopByEmailOrderByExpiryDateDesc(email);
+        if (!otpreal.get().getOtp().equals(otp)) {
+            return "Invalid OTP";
+        }
+        account.setPass(newPassword);
+        accountRepository.save(account);
+        return "Password reset successfully";
     }
 
 
