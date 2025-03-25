@@ -8,7 +8,7 @@ import {
   FaHome,
   FaChartBar,
   FaExchangeAlt,
-  FaChartPie,
+  FaPiggyBank,
   FaTags,
   FaBell,
   FaUser,
@@ -174,7 +174,7 @@ const Header = () => {
                   to="/budgets"
                   className="flex items-center space-x-2 text-white hover:text-yellow-300 transition-all duration-300 ease-in-out font-medium"
                 >
-                  <FaChartPie />
+                  <FaPiggyBank />
                   <span>Ngân sách</span>
                 </Link>
                 <Link
@@ -348,7 +348,7 @@ const Header = () => {
                 to="/budgets"
                 className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-md transition-all duration-300 ease-in-out"
               >
-                <FaChartPie />
+                <FaPiggyBank />
                 <span>Ngân sách</span>
               </Link>
               <Link

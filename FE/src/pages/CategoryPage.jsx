@@ -425,47 +425,66 @@ const CategoryPage = () => {
                   key={category.id}
                   className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer border border-gray-200 hover:border-purple-400 relative transform hover:scale-105"
                 >
-                  <div
-                    className="flex items-center gap-4"
-                    onClick={() => handleCategoryClick(category)}
-                  >
-                    <div className="w-12 h-12 rounded-full flex items-center justify-center bg-purple-100">
-                      <span className="text-xl font-bold text-purple-600">
-                        {category.name[0]}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-xl font-semibold text-gray-900">
-                        {category.name}
-                      </p>
-                      <p className="text-sm text-gray-500">Người dùng</p>
-                    </div>
-                  </div>
-                  <div className="absolute top-4 right-4">
-                    <button
-                      onClick={() => toggleDropdown(category.id)}
-                      className="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100 transition-all duration-200"
+                  <div className="flex items-center justify-between gap-4">
+                    <div
+                      className="flex items-center gap-4"
+                      onClick={() => handleCategoryClick(category)}
                     >
-                      <FaEllipsisH size={16} />
-                    </button>
-                    {openDropdown === category.id && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl z-10 border border-gray-100">
-                        <ul className="py-1 text-sm text-gray-700">
-                          <li
-                            onClick={() => handleEdit(category)}
-                            className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150"
-                          >
-                            Sửa danh mục
-                          </li>
-                          <li
-                            onClick={() => handleDelete(category.id)}
-                            className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors duration-150 text-red-600"
-                          >
-                            Xóa danh mục
-                          </li>
-                        </ul>
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center bg-purple-100">
+                        <span className="text-xl font-bold text-purple-600">
+                          {category.name[0]}
+                        </span>
                       </div>
-                    )}
+                      <div>
+                        <p className="text-xl font-semibold text-gray-900">
+                          {category.name}
+                        </p>
+                        <p className="text-sm text-gray-500">Người dùng</p>
+                      </div>
+                    </div>
+                    {/* Thay thế nút ba chấm bằng 2 nút icon */}
+                    <div className="flex flex-col gap-2">
+                      <button
+                        onClick={() => handleEdit(category)}
+                        className="text-blue-500 hover:text-blue-700 p-1 rounded-full hover:bg-blue-100 transition-all duration-200"
+                        title="Sửa danh mục"
+                      >
+                        <svg
+                          className="w-[25px] h-[25px]" // Tăng từ w-5 h-5 lên w-[25px] h-[25px]
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="3"
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDelete(category.id)}
+                        className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-100 transition-all duration-200"
+                        title="Xóa danh mục"
+                      >
+                        <svg
+                          className="w-[25px] h-[25px]" // Tăng từ w-5 h-5 lên w-[25px] h-[25px]
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="3"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4M9 7h6m-5 4v6m4-6v6"
+                          />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))

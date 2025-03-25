@@ -185,12 +185,6 @@ const AccountPage = () => {
                 <p className="text-sm text-blue-100">{accountData.email}</p>
               </div>
             </div>
-            <Link
-              to="/"
-              className="text-white hover:text-blue-200 transition-colors duration-200 text-sm font-medium"
-            >
-              Back to Home
-            </Link>
           </div>
 
           <div className="p-8">
