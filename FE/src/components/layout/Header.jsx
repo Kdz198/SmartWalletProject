@@ -17,9 +17,8 @@ import {
   FaUserPlus,
 } from "react-icons/fa";
 
-// Avatar mặc định dựa trên giới tính
-const maleAvatar = "https://avatar.iran.liara.run/public/boy"; // Avatar nam
-const femaleAvatar = "https://avatar.iran.liara.run/public/girl"; // Avatar nữ
+const maleAvatar = "https://avatar.iran.liara.run/public/boy";
+const femaleAvatar = "https://avatar.iran.liara.run/public/girl";
 
 const Header = () => {
   const { user, logout } = useAuth();
@@ -32,17 +31,13 @@ const Header = () => {
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
 
-  // Lấy dữ liệu tài khoản và thông báo từ API khi user thay đổi
   useEffect(() => {
     const fetchAccountData = async () => {
       if (user && user.id) {
         try {
           const response = await fetch(
             `http://localhost:8080/api/account/findbyid?id=${user.id}`,
-            {
-              method: "GET",
-              credentials: "include",
-            }
+            { method: "GET", credentials: "include" }
           );
           if (!response.ok) {
             const errorData = await response.json();
@@ -67,10 +62,7 @@ const Header = () => {
         try {
           const response = await fetch(
             `http://localhost:8080/api/notification?id=${user.id}`,
-            {
-              method: "GET",
-              credentials: "include",
-            }
+            { method: "GET", credentials: "include" }
           );
           if (!response.ok) {
             const errorData = await response.json();
@@ -82,7 +74,7 @@ const Header = () => {
           }
           const data = await response.json();
           setNotifications(data);
-          setUnreadCount(data.filter((noti) => !noti.isRead).length);
+          setUnreadCount(data.filter((noti) => !noti.read).length); // Sử dụng read
           console.log("Tải thông báo thành công:", data);
         } catch (error) {
           console.error("Lỗi khi tải thông báo:", error.message);
@@ -96,7 +88,6 @@ const Header = () => {
     setIsLoggedIn(!!user);
   }, [user]);
 
-  // Đóng dropdown khi nhấp ra ngoài
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -104,9 +95,7 @@ const Header = () => {
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleLogout = () => {
@@ -118,22 +107,14 @@ const Header = () => {
     navigate("/login");
   };
 
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
-  const toggleDropdown = () => {
-    setIsDropdownOpen(!isDropdownOpen);
-  };
+  const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
+  const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
   const markAsRead = async (notificationId) => {
     try {
       const response = await fetch(
         `http://localhost:8080/api/notification/read?notificationId=${notificationId}`,
-        {
-          method: "GET",
-          credentials: "include",
-        }
+        { method: "GET", credentials: "include" }
       );
       if (!response.ok) {
         const errorData = await response.json();
@@ -144,11 +125,12 @@ const Header = () => {
         );
       }
       setNotifications((prev) =>
-        prev.map((noti) =>
-          noti.id === notificationId ? { ...noti, isRead: true } : noti
+        prev.map(
+          (noti) =>
+            noti.id === notificationId ? { ...noti, read: true } : noti // Sử dụng read
         )
       );
-      setUnreadCount((prev) => Math.max(prev - 1, 0)); // Đảm bảo không âm
+      setUnreadCount((prev) => Math.max(prev - 1, 0));
       console.log(`Đã đánh dấu thông báo ${notificationId} là đã đọc`);
     } catch (error) {
       console.error("Lỗi khi đánh dấu thông báo:", error.message);
@@ -163,7 +145,6 @@ const Header = () => {
     <header className="bg-gradient-to-r from-blue-600 to-indigo-500 text-white shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
           <div className="flex-shrink-0">
             <Link
               to={isLoggedIn ? "/dashboard" : "/"}
@@ -172,8 +153,6 @@ const Header = () => {
               Hoàng Tử Gió
             </Link>
           </div>
-
-          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
             <Link
               to={isLoggedIn ? "/dashboard" : "/"}
@@ -208,8 +187,6 @@ const Header = () => {
               </>
             )}
           </nav>
-
-          {/* Desktop Actions */}
           <div className="hidden md:flex items-center space-x-4 relative">
             {isLoggedIn && accountData ? (
               <>
@@ -236,9 +213,9 @@ const Header = () => {
                         {notifications.slice(0, 5).map((noti) => (
                           <div
                             key={noti.id}
-                            onClick={() => markAsRead(noti.id)}
+                            onClick={() => !noti.read && markAsRead(noti.id)} // Chỉ gọi markAsRead khi read === false
                             className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
-                              !noti.isRead ? "bg-blue-50" : ""
+                              !noti.read ? "bg-blue-50" : ""
                             }`}
                           >
                             <p className="text-sm font-medium text-gray-800">
@@ -304,8 +281,6 @@ const Header = () => {
               </>
             )}
           </div>
-
-          {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center">
             <button
               onClick={toggleMobileMenu}
@@ -347,8 +322,6 @@ const Header = () => {
           </div>
         </div>
       </div>
-
-      {/* Mobile Menu */}
       <div
         className={`md:hidden bg-white text-gray-800 shadow-lg transition-opacity duration-300 ${
           mobileMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
@@ -447,7 +420,7 @@ const Header = () => {
                 <Button
                   variant="outline"
                   fullWidth
-                  className="text-blue-600 border-blue-600 hover:bg-blue-50 transition-all duration-300 ease-in-out rounded-md flex items-center justify-center space-x-2"
+                  className="text-blue-600 border-blue-600 hover:bg-blue-50 transition-all duration-10 ease-in-out rounded-md flex items-center justify-center space-x-2"
                 >
                   <FaUserPlus />
                   <span>Đăng ký</span>

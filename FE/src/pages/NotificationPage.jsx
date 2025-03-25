@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { Bell, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
 
-// Confirmation Modal Component
 const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message }) => {
   if (!isOpen) return null;
 
@@ -30,7 +29,6 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message }) => {
   );
 };
 
-// Toast Notification Component
 const Toast = ({ type, message, onClose }) => {
   const toastStyles = {
     success: "bg-green-500",
@@ -70,63 +68,60 @@ const NotificationPage = () => {
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [toast, setToast] = useState(null);
 
-  // Logging function for comprehensive error tracking
-  const logError = (context, error) => {
+  const logError = (context, error, additionalInfo = {}) => {
     console.error(`🔴 Error in ${context}:`, {
       message: error.message,
       stack: error.stack,
       timestamp: new Date().toISOString(),
       userContext: user ? { userId: user.id } : "No user",
+      ...additionalInfo,
     });
   };
 
-  // API fetch with improved error handling
-  const fetchWithErrorHandling = async (url, options = {}) => {
+  const fetchWithErrorHandling = async (
+    url,
+    options = {},
+    expectJson = true
+  ) => {
     try {
       console.log(`🌐 API Request: ${url}`, options);
-      const response = await fetch(url, {
-        ...options,
-        credentials: "include",
-      });
+      const response = await fetch(url, { ...options, credentials: "include" });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        const errorMsg = errorData.message || "Lỗi không xác định từ máy chủ";
-
-        // Log detailed backend error
-        logError("API Request", new Error(errorMsg));
-
-        // Show user-friendly toast
-        setToast({
-          type: "error",
-          message: `Lỗi: ${errorMsg}`,
-        });
-
+        let errorMsg = "Lỗi không xác định từ máy chủ";
+        if (
+          response.headers.get("Content-Type")?.includes("application/json")
+        ) {
+          const errorData = await response.json();
+          errorMsg = errorData.message || errorMsg;
+        } else {
+          errorMsg = `Lỗi ${response.status}: ${response.statusText}`;
+        }
+        logError("API Request", new Error(errorMsg), { url, options });
+        setToast({ type: "error", message: `Lỗi: ${errorMsg}` });
         throw new Error(errorMsg);
       }
 
-      return await response.json();
+      return expectJson &&
+        response.headers.get("Content-Type")?.includes("application/json")
+        ? await response.json()
+        : null;
     } catch (error) {
-      logError("Fetch Process", error);
-      setToast({
-        type: "error",
-        message: "Đã có lỗi xảy ra. Vui lòng thử lại.",
-      });
+      logError("Fetch Process", error, { url, options });
       throw error;
     }
   };
 
-  // Fetch notifications
   const fetchNotifications = async (accountId) => {
     setLoading(true);
     setError(null);
     try {
       const data = await fetchWithErrorHandling(
-        `http://localhost:8080/api/notification?id=${accountId}`
+        `http://localhost:8080/api/notification?id=${accountId}`,
+        {},
+        true
       );
-
       console.log("✅ Notifications fetched successfully:", data);
-
       setNotifications(
         data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       );
@@ -137,30 +132,25 @@ const NotificationPage = () => {
     }
   };
 
-  // Mark notification as read
   const markAsRead = async (notificationId) => {
     try {
       await fetchWithErrorHandling(
         `http://localhost:8080/api/notification/read?notificationId=${notificationId}`,
-        { method: "GET" }
+        { method: "GET" },
+        false
       );
-
       setNotifications((prev) =>
-        prev.map((noti) =>
-          noti.id === notificationId ? { ...noti, isRead: true } : noti
+        prev.map(
+          (noti) =>
+            noti.id === notificationId ? { ...noti, read: true } : noti // Sử dụng read
         )
       );
-
-      setToast({
-        type: "success",
-        message: "Đã đánh dấu thông báo là đã đọc",
-      });
+      setToast({ type: "success", message: "Đã đánh dấu thông báo là đã đọc" });
     } catch (err) {
       // Error handling is done in fetchWithErrorHandling
     }
   };
 
-  // Relative time formatting
   const getRelativeTimeVi = (date) => {
     if (!date) return "";
     const now = new Date();
@@ -179,9 +169,7 @@ const NotificationPage = () => {
   };
 
   useEffect(() => {
-    if (user) {
-      fetchNotifications(user.id);
-    }
+    if (user) fetchNotifications(user.id);
   }, [user]);
 
   if (!user) {
@@ -199,7 +187,6 @@ const NotificationPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 p-8">
-      {/* Toast Notification */}
       {toast && (
         <Toast
           type={toast.type}
@@ -207,15 +194,16 @@ const NotificationPage = () => {
           onClose={() => setToast(null)}
         />
       )}
-
-      {/* Page Content */}
       <div className="max-w-4xl mx-auto">
         <h1 className="text-4xl font-bold text-gray-800 mb-8 text-center flex items-center justify-center">
           <Bell size={36} className="mr-4 text-blue-500" />
           Thông Báo
         </h1>
-
-        {/* Loading State */}
+        {error && (
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-lg">
+            {error}
+          </div>
+        )}
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-600"></div>
@@ -231,7 +219,7 @@ const NotificationPage = () => {
               <div
                 key={noti.id}
                 className={`bg-white rounded-2xl shadow-lg p-6 transition-all hover:shadow-xl ${
-                  !noti.isRead ? "border-l-4 border-blue-500" : "opacity-80"
+                  !noti.read ? "border-l-4 border-blue-500" : "opacity-80"
                 }`}
               >
                 <h2 className="text-xl font-semibold text-gray-800 mb-2">
@@ -242,7 +230,7 @@ const NotificationPage = () => {
                   <span className="text-sm text-gray-500">
                     {getRelativeTimeVi(noti.createdAt)}
                   </span>
-                  {!noti.isRead && (
+                  {!noti.read && ( // Chỉ hiển thị nút khi read === false
                     <button
                       onClick={() => setSelectedNotification(noti)}
                       className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
@@ -256,8 +244,6 @@ const NotificationPage = () => {
           </div>
         )}
       </div>
-
-      {/* Confirmation Modal */}
       <ConfirmationModal
         isOpen={!!selectedNotification}
         onClose={() => setSelectedNotification(null)}
