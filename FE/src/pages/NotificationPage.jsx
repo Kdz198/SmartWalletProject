@@ -121,10 +121,9 @@ const NotificationPage = () => {
         {},
         true
       );
+      console.log("✅ Dữ liệu thô từ API:", data); // Log dữ liệu gốc
       console.log("✅ Notifications fetched successfully:", data);
-      setNotifications(
-        data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      );
+      setNotifications(data.slice().reverse()); // Đảo ngược mảng hoàn toàn
     } catch (err) {
       setError("Không thể tải thông báo. Vui lòng kiểm tra kết nối.");
     } finally {

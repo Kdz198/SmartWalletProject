@@ -73,9 +73,11 @@ const Header = () => {
             );
           }
           const data = await response.json();
-          setNotifications(data);
-          setUnreadCount(data.filter((noti) => !noti.read).length); // Sử dụng read
-          console.log("Tải thông báo thành công:", data);
+          // Đảo ngược mảng để thông báo mới nhất (cuối API) lên đầu
+          const reversedData = data.slice().reverse();
+          setNotifications(reversedData);
+          setUnreadCount(reversedData.filter((noti) => !noti.read).length); // Cập nhật unreadCount với dữ liệu đã đảo ngược
+          console.log("Tải thông báo thành công:", reversedData);
         } catch (error) {
           console.error("Lỗi khi tải thông báo:", error.message);
           toast.error("Không thể tải thông báo. Vui lòng thử lại sau.");
