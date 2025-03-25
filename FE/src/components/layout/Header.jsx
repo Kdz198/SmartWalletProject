@@ -7,6 +7,7 @@ import "react-toastify/dist/ReactToastify.css";
 import {
   FaHome, // Icon cho Trang chủ
   FaChartBar, // Icon cho Tổng quan
+  FaTachometerAlt, // Icon cho Dashboard
   FaExchangeAlt,
   FaChartPie,
   FaTags,
@@ -95,7 +96,7 @@ const Header = () => {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
             <Link
-              to={isLoggedIn ? "/dashboard" : "/"}
+              to={isLoggedIn ? "/overview" : "/"}
               className="flex items-center space-x-2 text-white hover:text-yellow-300 transition-all duration-300 ease-in-out font-medium"
             >
               {isLoggedIn ? <FaChartBar /> : <FaHome />}
@@ -123,6 +124,13 @@ const Header = () => {
                 >
                   <FaTags />
                   <span>Danh mục</span>
+                </Link>
+                <Link
+                  to="/dashboard"
+                  className="flex items-center space-x-2 text-white hover:text-yellow-300 transition-all duration-300 ease-in-out font-medium"
+                >
+                  <FaTachometerAlt />
+                  <span>Dashboard</span>
                 </Link>
               </>
             )}
@@ -237,7 +245,7 @@ const Header = () => {
       >
         <div className="px-4 pt-3 pb-4 space-y-2">
           <Link
-            to={isLoggedIn ? "/dashboard" : "/"}
+            to={isLoggedIn ? "/overview" : "/"}
             className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-md transition-all duration-300 ease-in-out"
           >
             {isLoggedIn ? <FaChartBar /> : <FaHome />}
@@ -265,6 +273,13 @@ const Header = () => {
               >
                 <FaTags />
                 <span>Danh mục</span>
+              </Link>
+              <Link
+                to="/dashboard"
+                className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-md transition-all duration-300 ease-in-out"
+              >
+                <FaTachometerAlt />
+                <span>Dashboard</span>
               </Link>
             </>
           )}

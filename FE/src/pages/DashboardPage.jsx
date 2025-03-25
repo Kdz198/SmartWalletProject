@@ -6,14 +6,13 @@ import formatCurrency from "../utils/formatCurrency";
 import formatDate from "../utils/formatDate";
 import { Pie, Bar, Line } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale, PointElement, LineElement } from "chart.js";
-import Scrollbar from "react-scrollbars-custom"; // Import thư viện
+import Scrollbar from "react-scrollbars-custom";
 
 // Đăng ký các thành phần của Chart.js
 ChartJS.register(ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale, PointElement, LineElement);
 
 const TrangTongQuan = () => {
   const { user } = useAuth();
-  const [budgets, setBudgets] = useState([]);
   const [deals, setDeals] = useState([]);
   const [isQuickMenuOpen, setIsQuickMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -37,23 +36,6 @@ const TrangTongQuan = () => {
 
   // Lấy dữ liệu từ API
   useEffect(() => {
-    const layNganSach = async () => {
-      try {
-        const response = await fetch(
-          `http://localhost:8080/api/budget/findbymonthandaccount?month=${thangHienTai}&id=${idTaiKhoan}`,
-          { method: "GET", credentials: "include", headers: { Accept: "application/json" } }
-        );
-        if (!response.ok) {
-          const duLieuLoi = await response.json();
-          throw Object.assign(new Error("Không thể lấy ngân sách"), { response: { data: duLieuLoi, status: response.status } });
-        }
-        const data = await response.json();
-        setBudgets(data);
-      } catch (error) {
-        xuLyLoiApi(error, "lấy ngân sách");
-      }
-    };
-
     const layGiaoDich = async () => {
       try {
         const response = await fetch(
@@ -65,17 +47,18 @@ const TrangTongQuan = () => {
           throw Object.assign(new Error("Không thể lấy giao dịch"), { response: { data: duLieuLoi, status: response.status } });
         }
         const data = await response.json();
+        console.log("Dữ liệu từ API:", data);
         setDeals(data);
       } catch (error) {
         xuLyLoiApi(error, "lấy giao dịch");
+      } finally {
+        setLoading(false);
       }
     };
 
     if (user && idTaiKhoan) {
       setLoading(true);
-      Promise.all([layNganSach(), layGiaoDich()])
-        .then(() => setLoading(false))
-        .catch(() => toast.error("Không thể tải dữ liệu trang tổng quan."));
+      layGiaoDich();
     }
   }, [user, idTaiKhoan]);
 
@@ -121,6 +104,25 @@ const TrangTongQuan = () => {
 
   // Chỉ lấy 5 danh mục đầu tiên
   const danhMucHienThi = Object.entries(tongHopDanhMuc).slice(0, 5);
+
+  // Lấy danh sách budget từ deals và tính tổng deal.total cho từng budget
+  const budgets = deals
+    .filter((deal) => deal.budget)
+    .reduce((acc, deal) => {
+      const budgetId = deal.budget.id;
+      if (!acc[budgetId]) {
+        acc[budgetId] = {
+          id: budgetId,
+          name: deal.budget.name,
+          total: deal.budget.total || 0,
+          used: 0,
+        };
+      }
+        acc[budgetId].used += deal.total || 0;
+      return acc;
+    }, {});
+
+  const budgetList = Object.values(budgets);
 
   // Dữ liệu Bar Chart (3 tháng gần nhất)
   const thangTruoc1 = thangHienTai === 1 ? 12 : thangHienTai - 1;
@@ -201,11 +203,8 @@ const TrangTongQuan = () => {
         {/* Tiêu đề */}
         <header className="text-center mb-10">
           <h1 className="text-4xl font-extrabold bg-gradient-to-r from-cyan-400 to-pink-500 bg-clip-text text-transparent animate-pulse">
-            Trang Tổng Quan
+          Dashboard
           </h1>
-          <p className="text-lg text-gray-400 mt-2">
-            Xin chào, {user.email}! Hôm nay là {formatDate(new Date(), "vi-VN")}
-          </p>
         </header>
 
         {/* Bố cục chính */}
@@ -235,7 +234,7 @@ const TrangTongQuan = () => {
               </div>
             </div>
 
-            {/* Tổng hợp danh mục với react-scrollbars-custom */}
+            {/* Tổng hợp danh mục */}
             <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 shadow-xl">
               <h2 className="text-xl font-semibold mb-4 text-cyan-300">Tổng Hợp Danh Mục</h2>
               <Scrollbar
@@ -292,22 +291,38 @@ const TrangTongQuan = () => {
             </div>
           </div>
 
+          {/* Tiến độ ngân sách với Progress Bar */}
           <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 shadow-xl">
             <h2 className="text-xl font-semibold mb-4 text-cyan-300">Tiến Độ Ngân Sách</h2>
-            <div className="space-y-3 text-sm">
-              {budgets.length > 0 ? (
-                budgets.map((budget) => (
-                  <div key={budget.id} className="flex justify-between items-center border-b border-gray-700 pb-2">
-                    <span>{budget.name || "Không xác định"}</span>
-                    <span className="text-gray-300">
-                      {formatCurrency(budget.spent || 0, "VND", "vi-VN")} /{" "}
-                      {formatCurrency(budget.total || 0, "VND", "vi-VN")} (
-                      {budget.total ? ((budget.spent / budget.total) * 100).toFixed(0) : 0}%)
-                    </span>
-                  </div>
-                ))
+            <div className="space-y-4 text-sm">
+              {budgetList.length > 0 ? (
+                budgetList.map((budget) => {
+                  const used = budget.used || 0;
+                  const total = budget.total || 0;
+                  const percentage = total > 0 ? Math.min((used / total) * 100, 100) : 0;
+                  return (
+                    <div key={budget.id} className="space-y-2 group relative">
+                      <div className="flex justify-between items-center">
+                        <span>{budget.name || "Không xác định"}</span>
+                        <span className="text-gray-300">{formatCurrency(total, "VND", "vi-VN")}</span>
+                      </div>
+                      <div className="w-full bg-gray-700 rounded-full h-2.5 relative">
+                        <div
+                          className="bg-gradient-to-r from-cyan-400 to-pink-500 h-2.5 rounded-full transition-all duration-300"
+                          style={{ width: `${percentage}%` }}
+                        ></div>
+                        {/* Tooltip hiển thị khi hover */}
+                        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                            {formatCurrency(used, "VND", "vi-VN")} ({percentage.toFixed(2)}%)
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
               ) : (
-                <p className="text-gray-400">Chưa có ngân sách nào.</p>
+                <p className="text-gray-400">Chưa có ngân sách nào trong giao dịch.</p>
               )}
             </div>
           </div>
@@ -327,13 +342,15 @@ const TrangTongQuan = () => {
         }`}
       >
         <ul className="space-y-2">
-          {["Thêm Giao Dịch", "Thêm Ngân Sách", "Xem Tất Cả Giao Dịch", "Xem Tất Cả Ngân Sách", "Quản Lý Danh Mục", "Cài Đặt Tài Khoản"].map((muc) => (
-            <li key={muc}>
-              <a href="#" className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700/80 hover:text-white rounded-lg transition-colors">
-                {muc}
-              </a>
-            </li>
-          ))}
+          {["Thêm Giao Dịch", "Thêm Ngân Sách", "Xem Tất Cả Giao Dịch", "Xem Tất Cả Ngân Sách", "Quản Lý Danh Mục", "Cài Đặt Tài Khoản"].map(
+            (muc) => (
+              <li key={muc}>
+                <a href="#" className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700/80 hover:text-white rounded-lg transition-colors">
+                  {muc}
+                </a>
+              </li>
+            )
+          )}
         </ul>
       </div>
     </div>
