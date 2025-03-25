@@ -1,11 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  FaPlus,
-  FaEllipsisH,
-  FaTimes,
-  FaFolder,
-  FaFolderOpen,
-} from "react-icons/fa";
+import { FaPlus, FaEllipsisH, FaTimes, FaTags } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 
 const CategoryPage = () => {
@@ -26,7 +20,9 @@ const CategoryPage = () => {
   const [editFormData, setEditFormData] = useState(null);
   const [formErrors, setFormErrors] = useState({});
   const [openDropdown, setOpenDropdown] = useState(null);
-
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState(null);
+  const [showToast, setShowToast] = useState(false);
   const accountId = user?.id;
 
   // Fetch categories and deals
@@ -228,7 +224,8 @@ const CategoryPage = () => {
   };
 
   // Handle delete category
-  const handleDelete = async (categoryId) => {
+  // Handle delete category
+  const handleDelete = (categoryId) => {
     const category = userCategories.find((cat) => cat.id === categoryId);
     if (!category || !category.account) {
       console.warn("Không thể xóa danh mục hệ thống");
@@ -236,12 +233,21 @@ const CategoryPage = () => {
       return;
     }
 
-    if (!confirm("Bạn có chắc muốn xóa danh mục này không?")) return;
+    // Mở modal xác nhận và lưu category cần xóa
+    setCategoryToDelete(categoryId);
+    setIsDeleteModalOpen(true);
+  };
+
+  // Hàm xác nhận xóa
+  const confirmDelete = async () => {
+    if (!categoryToDelete) return;
 
     try {
-      console.log(`API Request: DELETE /api/category/delete?id=${categoryId}`);
+      console.log(
+        `API Request: DELETE /api/category/delete?id=${categoryToDelete}`
+      );
       const response = await fetch(
-        `http://localhost:8080/api/category/delete?id=${categoryId}`,
+        `http://localhost:8080/api/category/delete?id=${categoryToDelete}`,
         {
           method: "DELETE",
           credentials: "include",
@@ -254,9 +260,14 @@ const CategoryPage = () => {
         throw new Error(errorData.message || "Không thể xóa danh mục");
       }
 
-      console.log("API Response Success: Category deleted", categoryId);
+      console.log("API Response Success: Category deleted", categoryToDelete);
       await fetchData();
       setOpenDropdown(null);
+      setIsDeleteModalOpen(false);
+      setCategoryToDelete(null);
+      // Hiển thị toast
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000); // Ẩn toast sau 3 giây
     } catch (err) {
       console.error("Lỗi khi xóa danh mục:", err.message);
       alert("Có lỗi xảy ra khi xóa danh mục: " + err.message);
@@ -316,8 +327,8 @@ const CategoryPage = () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-10">
           <h1 className="text-4xl font-extrabold text-gray-900 flex items-center space-x-2">
-            <FaFolderOpen className="text-indigo-600" />
             <span>Danh mục tài chính</span>
+            <FaTags className="text-indigo-600" />
           </h1>
           <button
             onClick={() => setIsCreateModalOpen(true)}
@@ -327,11 +338,49 @@ const CategoryPage = () => {
             <span className="font-semibold">Tạo danh mục mới</span>
           </button>
         </div>
+        {/* Delete Confirmation Modal */}
+        {isDeleteModalOpen && (
+          <div className="fixed inset-0 backdrop-blur-xl bg-opacity-60 flex items-center justify-center z-50">
+            <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-100">
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Xác nhận xóa
+                </h2>
+                <p className="mt-2 text-gray-600">
+                  Bạn có chắc muốn xóa danh mục này không? Hành động này không
+                  thể hoàn tác.
+                </p>
+              </div>
+              <div className="flex justify-end gap-4">
+                <button
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-all duration-200"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200"
+                >
+                  Xóa
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
+        {/* Toast Notification */}
+        {showToast && (
+          <div className="fixed bottom-4 right-4 z-50">
+            <div className="bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-fade-in">
+              <span>Đã xóa danh mục thành công!</span>
+            </div>
+          </div>
+        )}
         {/* System Categories */}
         <div className="mb-12">
           <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center space-x-2">
-            <FaFolder className="text-indigo-500" />
+            <FaTags className="text-indigo-500" />
             <span>Danh mục hệ thống</span>
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -362,7 +411,7 @@ const CategoryPage = () => {
         {/* User Categories */}
         <div>
           <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center space-x-2">
-            <FaFolder className="text-purple-500" />
+            <FaTags className="text-purple-500" />
             <span>Danh mục của bạn</span>
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -492,7 +541,7 @@ const CategoryPage = () => {
 
         {/* Edit Modal */}
         {isEditModalOpen && editFormData && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="fixed inset-0  backdrop-blur-xl bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md max-h-[70vh] overflow-y-auto transform transition-all duration-300 scale-100">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">
