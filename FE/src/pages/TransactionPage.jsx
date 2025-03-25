@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 const TransactionPage = () => {
   const { user } = useAuth();
   const [transactions, setTransactions] = useState([]);
+  const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -12,8 +13,12 @@ const TransactionPage = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [categories, setCategories] = useState([]);
   const [budgets, setBudgets] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState(''); // Bộ lọc category
-  const [selectedBudget, setSelectedBudget] = useState(''); // Bộ lọc budget
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedBudget, setSelectedBudget] = useState('');
+  const [selectedType, setSelectedType] = useState(''); // Filter thu/chi
+  const [selectedMonth, setSelectedMonth] = useState(''); // Filter tháng
+  const [currentPage, setCurrentPage] = useState(1); // Trang hiện tại
+  const transactionsPerPage = 10; // Số giao dịch mỗi trang
   const [createFormData, setCreateFormData] = useState({
     type: false,
     total: '',
@@ -28,7 +33,7 @@ const TransactionPage = () => {
 
   const accountId = user?.id;
 
-  // Fetch transactions from API based on accountId, categoryId, and budgetId
+  // Fetch transactions from API
   const fetchTransactions = async () => {
     if (!accountId) return;
     setLoading(true);
@@ -57,6 +62,7 @@ const TransactionPage = () => {
         budget: item.budget?.id || null,
       }));
       setTransactions(formattedData);
+      applyFilters(formattedData);
       setLoading(false);
     } catch (err) {
       setError(err.message);
@@ -64,16 +70,14 @@ const TransactionPage = () => {
     }
   };
 
-  // Fetch categories from API theo quy ước mới
+  // Fetch categories from API
   const fetchCategories = async () => {
     try {
-      // Lấy category hệ thống (account == null)
       const systemResponse = await fetch('http://localhost:8080/api/category', { credentials: 'include' });
       if (!systemResponse.ok) throw new Error('Không thể lấy danh sách category hệ thống');
       const systemData = await systemResponse.json();
-      const systemCategories = systemData.filter((cat) => !cat.account); // Chỉ lấy category có account == null
+      const systemCategories = systemData.filter((cat) => !cat.account);
 
-      // Lấy category của account hiện tại (nếu có accountId)
       let userCategories = [];
       if (accountId) {
         const userResponse = await fetch(`http://localhost:8080/api/category/findbyaccountid?accountId=${accountId}`, {
@@ -83,7 +87,6 @@ const TransactionPage = () => {
         userCategories = await userResponse.json();
       }
 
-      // Kết hợp danh sách: category hệ thống + category của account hiện tại
       const combinedCategories = [...systemCategories, ...userCategories];
       setCategories(combinedCategories);
     } catch (err) {
@@ -91,7 +94,7 @@ const TransactionPage = () => {
     }
   };
 
-  // Fetch budgets from API based on accountId
+  // Fetch budgets from API
   const fetchBudgets = async () => {
     if (!accountId) return;
     try {
@@ -104,6 +107,19 @@ const TransactionPage = () => {
     }
   };
 
+  // Apply filters (type, month) and update filtered transactions
+  const applyFilters = (data) => {
+    let filtered = [...data];
+    if (selectedType !== '') {
+      filtered = filtered.filter((t) => (selectedType === 'true' ? t.type === 'pay' : t.type === 'earn'));
+    }
+    if (selectedMonth !== '') {
+      filtered = filtered.filter((t) => new Date(t.date).getMonth() + 1 === parseInt(selectedMonth, 10));
+    }
+    setFilteredTransactions(filtered);
+    setCurrentPage(1); // Reset về trang 1 khi filter thay đổi
+  };
+
   // Load initial data
   useEffect(() => {
     if (user && accountId) {
@@ -112,69 +128,66 @@ const TransactionPage = () => {
     }
   }, [user, accountId, selectedCategory, selectedBudget]);
 
+  // Re-apply filters when type or month changes
+  useEffect(() => {
+    applyFilters(transactions);
+  }, [selectedType, selectedMonth, transactions]);
+
   // Toggle dropdown for each transaction
   const toggleDropdown = (id) => {
     setOpenDropdown(openDropdown === id ? null : id);
   };
 
-  // Handle category filter change
+  // Handle filter changes
   const handleCategoryFilterChange = (e) => {
     setSelectedCategory(e.target.value);
   };
 
-  // Handle budget filter change
   const handleBudgetFilterChange = (e) => {
     setSelectedBudget(e.target.value);
   };
 
+  const handleTypeFilterChange = (e) => {
+    setSelectedType(e.target.value);
+  };
+
+  const handleMonthFilterChange = (e) => {
+    setSelectedMonth(e.target.value);
+  };
+
+  // Pagination logic
+  const indexOfLastTransaction = currentPage * transactionsPerPage;
+  const indexOfFirstTransaction = indexOfLastTransaction - transactionsPerPage;
+  const currentTransactions = filteredTransactions.slice(indexOfFirstTransaction, indexOfLastTransaction);
+  const totalPages = Math.ceil(filteredTransactions.length / transactionsPerPage);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
   // Validate form data
   const validateForm = (data) => {
     const errors = {};
-    if (data.type === null || data.type === undefined || data.type === '') {
-      errors.type = 'Type không được để trống';
-    }
-    if (!data.total || data.total <= 0) {
-      errors.total = 'Total phải là số dương';
-    }
-    if (!data.date) {
-      errors.date = 'Date không được để trống';
-    }
-    if (data.method === null || data.method === undefined || data.method === '') {
-      errors.method = 'Method không được để trống';
-    }
+    if (data.type === null || data.type === undefined || data.type === '') errors.type = 'Type không được để trống';
+    if (!data.total || data.total <= 0) errors.total = 'Total phải là số dương';
+    if (!data.date) errors.date = 'Date không được để trống';
+    if (data.method === null || data.method === undefined || data.method === '') errors.method = 'Method không được để trống';
     return errors;
   };
 
-  // Handle input changes for create form with validation
+  // Handle input changes for create/edit forms
   const handleCreateInputChange = (e) => {
     const { name, value } = e.target;
-    let newValue = value;
-
-    if (name === 'category' || name === 'budget') {
-      newValue = { id: value };
-    }
-
+    const newValue = name === 'category' || name === 'budget' ? { id: value } : value;
     const updatedFormData = { ...createFormData, [name]: newValue };
     setCreateFormData(updatedFormData);
-
-    const errors = validateForm(updatedFormData);
-    setFormErrors(errors);
+    setFormErrors(validateForm(updatedFormData));
   };
 
-  // Handle input changes for edit form with validation
   const handleEditInputChange = (e) => {
     const { name, value } = e.target;
-    let newValue = value;
-
-    if (name === 'category' || name === 'budget') {
-      newValue = { id: value };
-    }
-
+    const newValue = name === 'category' || name === 'budget' ? { id: value } : value;
     const updatedFormData = { ...editFormData, [name]: newValue };
     setEditFormData(updatedFormData);
-
-    const errors = validateForm(updatedFormData);
-    setFormErrors(errors);
+    setFormErrors(validateForm(updatedFormData));
   };
 
   // Handle create form submission
@@ -210,10 +223,7 @@ const TransactionPage = () => {
         credentials: 'include',
       });
 
-      if (!response.ok) {
-        setFormErrors({ general: 'Có lỗi xảy ra khi tạo giao dịch' });
-        return;
-      }
+      if (!response.ok) throw new Error('Có lỗi xảy ra khi tạo giao dịch');
 
       await fetchTransactions();
       setIsCreateModalOpen(false);
@@ -228,7 +238,7 @@ const TransactionPage = () => {
       });
       setFormErrors({});
     } catch (err) {
-      setFormErrors({ general: 'Có lỗi không xác định khi tạo giao dịch' });
+      setFormErrors({ general: err.message });
     }
   };
 
@@ -266,17 +276,14 @@ const TransactionPage = () => {
         credentials: 'include',
       });
 
-      if (!response.ok) {
-        setFormErrors({ general: 'Có lỗi xảy ra khi cập nhật giao dịch' });
-        return;
-      }
+      if (!response.ok) throw new Error('Có lỗi xảy ra khi cập nhật giao dịch');
 
       await fetchTransactions();
       setIsEditModalOpen(false);
       setEditFormData(null);
       setFormErrors({});
     } catch (err) {
-      setFormErrors({ general: 'Có lỗi không xác định khi cập nhật giao dịch' });
+      setFormErrors({ general: err.message });
     }
   };
 
@@ -297,7 +304,7 @@ const TransactionPage = () => {
     }
   };
 
-  // Handle edit deal (open edit modal)
+  // Handle edit deal
   const handleEdit = (deal) => {
     setEditFormData({
       id: deal.id,
@@ -392,7 +399,6 @@ const TransactionPage = () => {
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><p className="text-gray-600 text-lg">Đang tải...</p></div>;
   if (error) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><p className="text-red-600 text-lg">Lỗi: {error}</p></div>;
 
-  // Check if form has errors
   const hasErrors = (data) => Object.keys(validateForm(data)).length > 0;
 
   return (
@@ -433,10 +439,39 @@ const TransactionPage = () => {
                   ))}
                 </select>
               </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Loại:</label>
+                <select
+                  value={selectedType}
+                  onChange={handleTypeFilterChange}
+                  className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-green-300 focus:border-green-500 transition-all duration-200 ease-in-out"
+                >
+                  <option value="">Tất cả</option>
+                  <option value="false">Thu nhập</option>
+                  <option value="true">Chi tiêu</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Tháng:</label>
+                <select
+                  value={selectedMonth}
+                  onChange={handleMonthFilterChange}
+                  className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-yellow-300 focus:border-yellow-500 transition-all duration-200 ease-in-out"
+                >
+                  <option value="">Tất cả</option>
+                  {[...Array(12)].map((_, i) => (
+                    <option key={i + 1} value={i + 1}>
+                      Tháng {i + 1}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <button
                 onClick={() => {
                   setSelectedCategory('');
                   setSelectedBudget('');
+                  setSelectedType('');
+                  setSelectedMonth('');
                 }}
                 className="flex items-center gap-2 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition-all duration-200 text-sm font-medium"
               >
@@ -454,10 +489,10 @@ const TransactionPage = () => {
 
         {/* Transaction List */}
         <div className="space-y-5">
-          {transactions.length === 0 ? (
+          {currentTransactions.length === 0 ? (
             <p className="text-gray-500 text-center">Chưa có giao dịch nào.</p>
           ) : (
-            transactions.map((transaction) => (
+            currentTransactions.map((transaction) => (
               <div
                 key={transaction.id}
                 className="bg-white p-5 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-between border border-gray-100"
@@ -558,6 +593,25 @@ const TransactionPage = () => {
           )}
         </div>
 
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="mt-6 flex justify-center gap-2">
+            {[...Array(totalPages)].map((_, index) => (
+              <button
+                key={index + 1}
+                onClick={() => paginate(index + 1)}
+                className={`px-4 py-2 rounded-lg transition-all duration-200 ${
+                  currentPage === index + 1
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                {index + 1}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Create Modal */}
         {isCreateModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -603,7 +657,6 @@ const TransactionPage = () => {
                     onChange={handleCreateInputChange}
                     className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
                   />
-                  {formErrors.description && <p className="text-red-500 text-sm mt-1">{formErrors.description}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Ngày</label>
@@ -645,7 +698,6 @@ const TransactionPage = () => {
                       </option>
                     ))}
                   </select>
-                  {formErrors.category && <p className="text-red-500 text-sm mt-1">{formErrors.category}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Ngân sách (tuỳ chọn)</label>
@@ -662,7 +714,6 @@ const TransactionPage = () => {
                       </option>
                     ))}
                   </select>
-                  {formErrors.budget && <p className="text-red-500 text-sm mt-1">{formErrors.budget}</p>}
                 </div>
                 {formErrors.general && <p className="text-red-500 text-sm">{formErrors.general}</p>}
                 <button
@@ -726,7 +777,6 @@ const TransactionPage = () => {
                     onChange={handleEditInputChange}
                     className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
                   />
-                  {formErrors.description && <p className="text-red-500 text-sm mt-1">{formErrors.description}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Ngày</label>
@@ -768,7 +818,6 @@ const TransactionPage = () => {
                       </option>
                     ))}
                   </select>
-                  {formErrors.category && <p className="text-red-500 text-sm mt-1">{formErrors.category}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Ngân sách (tuỳ chọn)</label>
@@ -785,7 +834,6 @@ const TransactionPage = () => {
                       </option>
                     ))}
                   </select>
-                  {formErrors.budget && <p className="text-red-500 text-sm mt-1">{formErrors.budget}</p>}
                 </div>
                 {formErrors.general && <p className="text-red-500 text-sm">{formErrors.general}</p>}
                 <button
