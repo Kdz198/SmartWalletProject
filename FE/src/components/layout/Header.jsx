@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Button from "../common/Button";
 import { useAuth } from "../../context/AuthContext";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
-  FaHome, // Icon cho Trang chủ
-  FaChartBar, // Icon cho Tổng quan
-  FaTachometerAlt, // Icon cho Dashboard
+  FaHome,
+  FaChartBar,
   FaExchangeAlt,
   FaChartPie,
   FaTags,
@@ -27,11 +26,13 @@ const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(!!user);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [accountData, setAccountData] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const navigate = useNavigate();
+  const dropdownRef = useRef(null);
 
-  const notificationCount = 3; // Giả định số thông báo
-
-  // Lấy dữ liệu từ API /findbyid khi user thay đổi
+  // Lấy dữ liệu tài khoản và thông báo từ API khi user thay đổi
   useEffect(() => {
     const fetchAccountData = async () => {
       if (user && user.id) {
@@ -61,19 +62,98 @@ const Header = () => {
       }
     };
 
+    const fetchNotifications = async () => {
+      if (user && user.id) {
+        try {
+          const response = await fetch(
+            `http://localhost:8080/api/notification?id=${user.id}`,
+            {
+              method: "GET",
+              credentials: "include",
+            }
+          );
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(
+              `Không thể tải thông báo: ${response.status} - ${
+                errorData.message || "Lỗi không xác định"
+              }`
+            );
+          }
+          const data = await response.json();
+          setNotifications(data);
+          setUnreadCount(data.filter((noti) => !noti.isRead).length);
+          console.log("Tải thông báo thành công:", data);
+        } catch (error) {
+          console.error("Lỗi khi tải thông báo:", error.message);
+          toast.error("Không thể tải thông báo. Vui lòng thử lại sau.");
+        }
+      }
+    };
+
     fetchAccountData();
+    fetchNotifications();
     setIsLoggedIn(!!user);
   }, [user]);
+
+  // Đóng dropdown khi nhấp ra ngoài
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const handleLogout = () => {
     logout();
     setIsLoggedIn(false);
     setAccountData(null);
+    setNotifications([]);
+    setUnreadCount(0);
     navigate("/login");
   };
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+  };
+
+  const markAsRead = async (notificationId) => {
+    try {
+      const response = await fetch(
+        `http://localhost:8080/api/notification/read?notificationId=${notificationId}`,
+        {
+          method: "GET",
+          credentials: "include",
+        }
+      );
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          `Không thể đánh dấu thông báo là đã đọc: ${response.status} - ${
+            errorData.message || "Lỗi không xác định"
+          }`
+        );
+      }
+      setNotifications((prev) =>
+        prev.map((noti) =>
+          noti.id === notificationId ? { ...noti, isRead: true } : noti
+        )
+      );
+      setUnreadCount((prev) => Math.max(prev - 1, 0)); // Đảm bảo không âm
+      console.log(`Đã đánh dấu thông báo ${notificationId} là đã đọc`);
+    } catch (error) {
+      console.error("Lỗi khi đánh dấu thông báo:", error.message);
+      toast.error("Không thể đánh dấu thông báo. Vui lòng thử lại sau.");
+    }
   };
 
   const avatarUrl =
@@ -96,7 +176,7 @@ const Header = () => {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
             <Link
-              to={isLoggedIn ? "/overview" : "/"}
+              to={isLoggedIn ? "/dashboard" : "/"}
               className="flex items-center space-x-2 text-white hover:text-yellow-300 transition-all duration-300 ease-in-out font-medium"
             >
               {isLoggedIn ? <FaChartBar /> : <FaHome />}
@@ -125,32 +205,63 @@ const Header = () => {
                   <FaTags />
                   <span>Danh mục</span>
                 </Link>
-                <Link
-                  to="/dashboard"
-                  className="flex items-center space-x-2 text-white hover:text-yellow-300 transition-all duration-300 ease-in-out font-medium"
-                >
-                  <FaTachometerAlt />
-                  <span>Dashboard</span>
-                </Link>
               </>
             )}
           </nav>
 
           {/* Desktop Actions */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-4 relative">
             {isLoggedIn && accountData ? (
               <>
-                <Link
-                  to="/notifications"
-                  className="relative p-2 text-white hover:text-yellow-300 hover:bg-white/10 rounded-full transition-all duration-300 ease-in-out"
-                >
-                  <FaBell className="h-6 w-6" />
-                  {notificationCount > 0 && (
-                    <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full text-xs flex items-center justify-center text-white shadow-sm">
-                      {notificationCount}
-                    </span>
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={toggleDropdown}
+                    className="relative p-2 text-white hover:text-yellow-300 hover:bg-white/10 rounded-full transition-all duration-300 ease-in-out"
+                  >
+                    <FaBell className="h-6 w-6" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full text-xs flex items-center justify-center text-white shadow-sm">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </button>
+                  {isDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl z-50">
+                      <div className="p-4 border-b border-gray-200">
+                        <h3 className="text-lg font-semibold text-gray-800">
+                          Thông báo
+                        </h3>
+                      </div>
+                      <div className="max-h-64 overflow-y-auto">
+                        {notifications.slice(0, 5).map((noti) => (
+                          <div
+                            key={noti.id}
+                            onClick={() => markAsRead(noti.id)}
+                            className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
+                              !noti.isRead ? "bg-blue-50" : ""
+                            }`}
+                          >
+                            <p className="text-sm font-medium text-gray-800">
+                              {noti.tittle || "Thông báo mới"}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {noti.message || "Không có nội dung"}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="p-4">
+                        <Link
+                          to="/notifications"
+                          className="block text-center text-blue-600 hover:text-blue-800 font-medium"
+                          onClick={() => setIsDropdownOpen(false)}
+                        >
+                          Xem thêm
+                        </Link>
+                      </div>
+                    </div>
                   )}
-                </Link>
+                </div>
                 <button
                   onClick={() => navigate("/account")}
                   className="flex items-center space-x-2 text-white hover:bg-white/10 px-3 py-2 rounded-lg transition-all duration-300 ease-in-out"
@@ -245,7 +356,7 @@ const Header = () => {
       >
         <div className="px-4 pt-3 pb-4 space-y-2">
           <Link
-            to={isLoggedIn ? "/overview" : "/"}
+            to={isLoggedIn ? "/dashboard" : "/"}
             className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-md transition-all duration-300 ease-in-out"
           >
             {isLoggedIn ? <FaChartBar /> : <FaHome />}
@@ -274,13 +385,6 @@ const Header = () => {
                 <FaTags />
                 <span>Danh mục</span>
               </Link>
-              <Link
-                to="/dashboard"
-                className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-md transition-all duration-300 ease-in-out"
-              >
-                <FaTachometerAlt />
-                <span>Dashboard</span>
-              </Link>
             </>
           )}
         </div>
@@ -306,9 +410,9 @@ const Header = () => {
                   className="ml-auto p-2 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-full transition-all duration-300 ease-in-out relative"
                 >
                   <FaBell className="h-6 w-6" />
-                  {notificationCount > 0 && (
+                  {unreadCount > 0 && (
                     <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full text-xs flex items-center justify-center text-white shadow-sm">
-                      {notificationCount}
+                      {unreadCount}
                     </span>
                   )}
                 </Link>
