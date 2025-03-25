@@ -11,8 +11,8 @@ const BudgetPage = () => {
   const [error, setError] = useState(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isAddDealModalOpen, setIsAddDealModalOpen] = useState(false); // Modal mới
-  const [selectedBudgetId, setSelectedBudgetId] = useState(null); // Budget đang chọn để thêm deal
+  const [isAddDealModalOpen, setIsAddDealModalOpen] = useState(false);
+  const [selectedBudgetId, setSelectedBudgetId] = useState(null);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [selectedType, setSelectedType] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('');
@@ -27,7 +27,6 @@ const BudgetPage = () => {
 
   const accountId = user?.id;
 
-  // Fetch budgets and deals
   const fetchBudgetsAndDeals = async () => {
     if (!accountId) return;
     setLoading(true);
@@ -67,7 +66,6 @@ const BudgetPage = () => {
     }
   };
 
-  // Apply filter based on selected type and month
   const applyFilter = (budgetList, typeFilter, monthFilter) => {
     let filtered = budgetList;
     if (typeFilter !== '') {
@@ -79,47 +77,40 @@ const BudgetPage = () => {
     setFilteredBudgets(filtered);
   };
 
-  // Handle type filter change
   const handleTypeFilterChange = (e) => {
     const newType = e.target.value;
     setSelectedType(newType);
     applyFilter(budgets, newType, selectedMonth);
   };
 
-  // Handle month filter change
   const handleMonthFilterChange = (e) => {
     const newMonth = e.target.value;
     setSelectedMonth(newMonth);
     applyFilter(budgets, selectedType, newMonth);
   };
 
-  // Load initial data when user or accountId changes
   useEffect(() => {
     if (user && accountId) {
       fetchBudgetsAndDeals();
     }
   }, [user, accountId]);
 
-  // Toggle dropdown for each budget
   const toggleDropdown = (id) => {
     setOpenDropdown(openDropdown === id ? null : id);
   };
 
-  // Handle input changes for create form
   const handleCreateInputChange = (e) => {
     const { name, value } = e.target;
     setCreateFormData({ ...createFormData, [name]: value });
     setFormErrors({ ...formErrors, [name]: '' });
   };
 
-  // Handle input changes for edit form
   const handleEditInputChange = (e) => {
     const { name, value } = e.target;
     setEditFormData({ ...editFormData, [name]: value });
     setFormErrors({ ...formErrors, [name]: '' });
   };
 
-  // Handle create form submission
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
     if (!accountId) {
@@ -169,7 +160,6 @@ const BudgetPage = () => {
     }
   };
 
-  // Handle edit form submission
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!accountId || !editFormData.id) {
@@ -215,7 +205,6 @@ const BudgetPage = () => {
     }
   };
 
-  // Handle delete budget
   const handleDelete = async (budgetId) => {
     if (!confirm('Bạn có chắc muốn xóa ngân sách này không?')) return;
     try {
@@ -232,7 +221,6 @@ const BudgetPage = () => {
     }
   };
 
-  // Handle edit budget (open edit modal)
   const handleEdit = (budget) => {
     setEditFormData({
       id: budget.id,
@@ -245,14 +233,12 @@ const BudgetPage = () => {
     setOpenDropdown(null);
   };
 
-  // Open modal to add deal to budget
   const handleOpenAddDealModal = (budgetId) => {
     setSelectedBudgetId(budgetId);
     setIsAddDealModalOpen(true);
     setOpenDropdown(null);
   };
 
-  // Handle add deal to budget
   const handleAddDealToBudget = async (dealId, budgetId) => {
     try {
       const deal = deals.find((d) => d.id === dealId);
@@ -290,19 +276,16 @@ const BudgetPage = () => {
     }
   };
 
-  // Check if user is not logged in
   if (!user) {
     return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><p className="text-gray-600 text-lg">Vui lòng đăng nhập để xem ngân sách.</p></div>;
   }
 
-  // Loading and error states
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><p className="text-gray-600 text-lg">Đang tải...</p></div>;
   if (error) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><p className="text-red-600 text-lg">Lỗi: {error}</p></div>;
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-5xl mx-auto">
-        {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Ngân sách của bạn</h1>
           <div className="flex items-center gap-6">
@@ -354,7 +337,6 @@ const BudgetPage = () => {
           </div>
         </div>
 
-        {/* Budget List */}
         <div className="space-y-5">
           {filteredBudgets.length === 0 ? (
             <p className="text-gray-500 text-center">Chưa có ngân sách nào.</p>
@@ -445,7 +427,6 @@ const BudgetPage = () => {
           )}
         </div>
 
-        {/* Create Modal */}
         {isCreateModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-md max-h-[70vh] overflow-y-auto">
@@ -519,7 +500,6 @@ const BudgetPage = () => {
           </div>
         )}
 
-        {/* Edit Modal */}
         {isEditModalOpen && editFormData && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-md max-h-[70vh] overflow-y-auto">
@@ -604,12 +584,18 @@ const BudgetPage = () => {
                 </button>
               </div>
               <div className="space-y-3">
-                {deals.filter((deal) => !deal.budget).length === 0 ? (
-                  <p className="text-gray-500 text-center">Không có giao dịch nào để thêm.</p>
-                ) : (
-                  deals
-                    .filter((deal) => !deal.budget)
-                    .map((deal) => (
+                {(() => {
+                  const selectedBudget = budgets.find((b) => b.id === selectedBudgetId);
+                  const budgetType = selectedBudget?.type; // true (chi tiêu) hoặc false (thu nhập)
+                  const availableDeals = deals.filter(
+                    (deal) => !deal.budget && deal.type === budgetType
+                  );
+                  return availableDeals.length === 0 ? (
+                    <p className="text-gray-500 text-center">
+                      Không có giao dịch {budgetType ? 'chi tiêu' : 'thu nhập'} nào để thêm.
+                    </p>
+                  ) : (
+                    availableDeals.map((deal) => (
                       <div
                         key={deal.id}
                         onClick={() => handleAddDealToBudget(deal.id, selectedBudgetId)}
@@ -631,7 +617,8 @@ const BudgetPage = () => {
                         </p>
                       </div>
                     ))
-                )}
+                  );
+                })()}
               </div>
             </div>
           </div>
