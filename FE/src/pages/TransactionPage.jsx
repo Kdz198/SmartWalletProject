@@ -9,8 +9,6 @@ import {
   FaCheck,
 } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 
 const TransactionPage = () => {
   const { user } = useAuth();
@@ -46,8 +44,31 @@ const TransactionPage = () => {
   });
   const [editFormData, setEditFormData] = useState(null);
   const [formErrors, setFormErrors] = useState({});
+  const [toast, setToast] = useState({ show: false, message: "", type: "" });
 
   const accountId = user?.id;
+
+  // Hàm hiển thị toast
+  const showToast = (message, type) => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: "", type: "" }), 3000);
+  };
+
+  // Hàm lấy màu sắc cho toast
+  const getToastColor = (type) => {
+    switch (type) {
+      case "create":
+        return "green-500"; // Xanh lục cho tạo mới
+      case "update":
+        return "blue-500"; // Xanh dương cho cập nhật
+      case "delete":
+        return "red-500"; // Đỏ cho xóa
+      case "error":
+        return "red-500"; // Đỏ cho lỗi
+      default:
+        return "gray-500";
+    }
+  };
 
   const fetchTransactions = async () => {
     if (!accountId) return;
@@ -92,6 +113,7 @@ const TransactionPage = () => {
       console.error("Lỗi khi tải giao dịch:", err.message);
       setError(err.message);
       setLoading(false);
+      showToast(err.message, "error");
     }
   };
 
@@ -145,6 +167,7 @@ const TransactionPage = () => {
       setCategories(combinedCategories);
     } catch (err) {
       console.error("Lỗi khi lấy danh sách category:", err.message);
+      showToast(err.message, "error");
     }
   };
 
@@ -168,6 +191,7 @@ const TransactionPage = () => {
       setBudgets(data);
     } catch (err) {
       console.error("Lỗi khi lấy danh sách budget:", err.message);
+      showToast(err.message, "error");
     }
   };
 
@@ -273,6 +297,7 @@ const TransactionPage = () => {
     if (!accountId) {
       setFormErrors({ general: "Vui lòng đăng nhập để tạo giao dịch" });
       console.error("Lỗi: Người dùng chưa đăng nhập");
+      showToast("Vui lòng đăng nhập để tạo giao dịch", "error");
       return;
     }
 
@@ -327,10 +352,11 @@ const TransactionPage = () => {
         budget: { id: "" },
       });
       setFormErrors({});
-      toast.success("Giao dịch đã được tạo thành công!");
+      showToast("Giao dịch đã được tạo thành công!", "create");
     } catch (err) {
       console.error("Lỗi khi tạo giao dịch:", err.message);
       setFormErrors({ general: err.message });
+      showToast(err.message, "error");
     }
   };
 
@@ -339,6 +365,7 @@ const TransactionPage = () => {
     if (!accountId || !editFormData.id) {
       setFormErrors({ general: "Dữ liệu không hợp lệ để cập nhật giao dịch" });
       console.error("Lỗi: Dữ liệu không hợp lệ");
+      showToast("Dữ liệu không hợp lệ để cập nhật giao dịch", "error");
       return;
     }
 
@@ -387,10 +414,11 @@ const TransactionPage = () => {
       setIsEditModalOpen(false);
       setEditFormData(null);
       setFormErrors({});
-      toast.success("Giao dịch đã được cập nhật thành công!");
+      showToast("Giao dịch đã được cập nhật thành công!", "update");
     } catch (err) {
       console.error("Lỗi khi cập nhật giao dịch:", err.message);
       setFormErrors({ general: err.message });
+      showToast(err.message, "error");
     }
   };
 
@@ -413,10 +441,10 @@ const TransactionPage = () => {
       await fetchTransactions();
       setOpenDropdown(null);
       setIsDeleteModalOpen(false);
-      toast.success("Giao dịch đã được xóa thành công!");
+      showToast("Giao dịch đã được xóa thành công!", "delete");
     } catch (err) {
       console.error("Lỗi khi xóa giao dịch:", err.message);
-      toast.error("Có lỗi xảy ra khi xóa giao dịch: " + err.message);
+      showToast("Có lỗi xảy ra khi xóa giao dịch: " + err.message, "error");
     }
   };
 
@@ -476,10 +504,10 @@ const TransactionPage = () => {
       await fetchTransactions();
       setIsAddCategoryModalOpen(false);
       setOpenDropdown(null);
-      toast.success("Phân loại đã được thêm thành công!");
+      showToast("Phân loại đã được thêm thành công!", "update");
     } catch (err) {
       console.error("Lỗi khi thêm phân loại:", err.message);
-      toast.error("Có lỗi xảy ra khi thêm phân loại: " + err.message);
+      showToast("Có lỗi xảy ra khi thêm phân loại: " + err.message, "error");
     }
   };
 
@@ -518,10 +546,13 @@ const TransactionPage = () => {
       await fetchTransactions();
       setIsAddBudgetModalOpen(false);
       setOpenDropdown(null);
-      toast.success("Ngân sách đã được thêm thành công!");
+      showToast("Ngân sách đã được thêm thành công!", "update");
     } catch (err) {
       console.error("Lỗi khi thêm vào ngân sách:", err.message);
-      toast.error("Có lỗi xảy ra khi thêm vào ngân sách: " + err.message);
+      showToast(
+        "Có lỗi xảy ra khi thêm vào ngân sách: " + err.message,
+        "error"
+      );
     }
   };
 
@@ -543,6 +574,17 @@ const TransactionPage = () => {
         <p className="text-gray-700 text-xl font-semibold">
           Vui lòng đăng nhập để xem giao dịch.
         </p>
+        {toast.show && (
+          <div className="fixed top-4 right-4 z-50">
+            <div
+              className={`bg-${getToastColor(
+                toast.type
+              )} text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-fade-in`}
+            >
+              <span>{toast.message}</span>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -557,6 +599,17 @@ const TransactionPage = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-100 to-blue-200 flex items-center justify-center">
         <p className="text-red-600 text-xl font-semibold">Lỗi: {error}</p>
+        {toast.show && (
+          <div className="fixed top-4 right-4 z-50">
+            <div
+              className={`bg-${getToastColor(
+                toast.type
+              )} text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-fade-in`}
+            >
+              <span>{toast.message}</span>
+            </div>
+          </div>
+        )}
       </div>
     );
 
@@ -673,7 +726,7 @@ const TransactionPage = () => {
             currentTransactions.map((transaction) => (
               <div
                 key={transaction.id}
-                className="bg-white p-5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-between border border-gray-100 transform hover:scale-105 hover:z-10 relative" // Thêm hover:z-10
+                className="bg-white p-5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-between border border-gray-100 transform hover:scale-105 hover:z-10 relative"
               >
                 <div className="flex items-center gap-4">
                   <div
@@ -735,14 +788,12 @@ const TransactionPage = () => {
                   <div className="relative">
                     <button
                       onClick={() => toggleDropdown(transaction.id)}
-                      className="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100 transition-all duration-200 z-20" // Thêm z-20 cho nút
+                      className="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100 transition-all duration-200 z-20"
                     >
                       <FaEllipsisH size={16} />
                     </button>
                     {openDropdown === transaction.id && (
                       <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-xl z-50 border border-gray-100">
-                        {" "}
-                        {/* Tăng z-50 và thêm top-full */}
                         <ul className="py-1 text-sm text-gray-700">
                           <li
                             onClick={() => handleEdit(transaction)}
@@ -802,9 +853,22 @@ const TransactionPage = () => {
           </div>
         )}
 
+        {/* Toast */}
+        {toast.show && (
+          <div className="fixed top-4 right-4 z-50">
+            <div
+              className={`bg-${getToastColor(
+                toast.type
+              )} text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-fade-in`}
+            >
+              <span>{toast.message}</span>
+            </div>
+          </div>
+        )}
+
         {/* Create Modal */}
         {isCreateModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black backdrop-blur bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md max-h-[70vh] overflow-y-auto transform transition-all duration-300 scale-100">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -961,7 +1025,7 @@ const TransactionPage = () => {
 
         {/* Edit Modal */}
         {isEditModalOpen && editFormData && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black backdrop-blur bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md max-h-[70vh] overflow-y-auto transform transition-all duration-300 scale-100">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -1118,7 +1182,7 @@ const TransactionPage = () => {
 
         {/* Add Category Modal */}
         {isAddCategoryModalOpen && selectedDealId && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black backdrop-blur bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md max-h-[70vh] overflow-y-auto transform transition-all duration-300 scale-100">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -1154,7 +1218,7 @@ const TransactionPage = () => {
 
         {/* Add Budget Modal */}
         {isAddBudgetModalOpen && selectedDealId && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black backdrop-blur bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md max-h-[70vh] overflow-y-auto transform transition-all duration-300 scale-100">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -1190,7 +1254,7 @@ const TransactionPage = () => {
 
         {/* Delete Confirmation Modal */}
         {isDeleteModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black backdrop-blur bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-100">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -1224,12 +1288,6 @@ const TransactionPage = () => {
             </div>
           </div>
         )}
-
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-        />
       </div>
     </div>
   );

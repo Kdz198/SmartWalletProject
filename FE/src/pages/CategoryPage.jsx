@@ -282,7 +282,7 @@ const CategoryPage = () => {
         )}
 
         {isDeleteModalOpen && (
-          <div className="fixed inset-0 backdrop-blur-xl bg-opacity-60 flex items-center justify-center z-50">
+          <div className="fixed inset-0 backdrop-blur bg-black bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-100">
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">
