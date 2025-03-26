@@ -159,7 +159,7 @@ const Header = () => {
               to={isLoggedIn ? "/dashboard" : "/"}
               className="text-3xl font-bold text-white"
             >
-              Hoàng Tử Gió
+             Smart Wallet
             </Link>
           </div>
           <nav className="hidden md:flex items-center space-x-6">
